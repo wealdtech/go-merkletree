@@ -32,6 +32,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // MerkleTree is the top-level structure for the merkle tree.
@@ -170,4 +171,34 @@ func buildParents(nodes []*Node) []*Node {
 // String implements the stringer interface
 func (t *MerkleTree) String() string {
 	return fmt.Sprintf("%x", t.root.hash)
+}
+
+// DOT creates a DOT representation of the tree.  It is generally used for external presentation.
+func (t *MerkleTree) DOT() string {
+	var builder strings.Builder
+	builder.WriteString("digraph MerkleTree {")
+	builder.WriteString("node [shape=rectangle margin=\"0.2,0.2\"];")
+	dotNode(t.root, &builder)
+	builder.WriteString("}")
+	return builder.String()
+}
+
+// dotNode creates a DOT representation of a particular node, including recursing through children
+func dotNode(node *Node, builder *strings.Builder) {
+	builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.hash, node.left.hash))
+	if node.left.IsLeaf() {
+		builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.left.data))
+		builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.left.hash, node.left.data))
+	} else {
+		dotNode(node.left, builder)
+	}
+	if node.right != node.left {
+		builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.hash, node.right.hash))
+		if node.right.IsLeaf() {
+			builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.right.data))
+			builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.right.hash, node.right.data))
+		} else {
+			dotNode(node.right, builder)
+		}
+	}
 }
