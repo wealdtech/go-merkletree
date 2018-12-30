@@ -40,6 +40,50 @@ type MerkleTree struct {
 	root *Node
 }
 
+// ContainsData returns true if the tree contains the provided data, otherwise false.
+func (t *MerkleTree) ContainsData(data NodeData) bool {
+	return t.findLeafNode(data) != nil
+}
+
+// DOT creates a DOT representation of the tree.  It is generally used for external presentation.
+func (t *MerkleTree) DOT() string {
+	var builder strings.Builder
+	builder.WriteString("digraph MerkleTree {")
+	builder.WriteString("node [shape=rectangle margin=\"0.2,0.2\"];")
+	dotNode(t.root, &builder)
+	builder.WriteString("}")
+	return builder.String()
+}
+
+// GenerateProof generates the proof for a piece of data.
+// If the data is not present in the tree this will return an error.
+// If the data is present in the tree this will return the hashes for each level in the tree and details of if the hashes returned
+// are the left-hand or right-hand hashes at each level (true if the left-hand, false if the right-hand).
+func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
+	// Find the leaf node in the tree that contains the data
+	node := t.findLeafNode(data)
+	if node == nil {
+		return nil, nil, errors.New("merkle tree does not contain this data")
+	}
+
+	// Build the proof and associated path
+	proof := make([][]byte, 0)
+	path := make([]bool, 0)
+	for {
+		if node.IsRoot() {
+			return proof, path, nil
+		}
+		if node.parent.left == node {
+			proof = append(proof, node.parent.right.hash)
+			path = append(path, false)
+		} else {
+			proof = append(proof, node.parent.left.hash)
+			path = append(path, true)
+		}
+		node = node.parent
+	}
+}
+
 // New creates a new Merkle tree using the provided data.
 // nodeData must contain at least one element for it to be valid.
 func New(nodeData []NodeData) (*MerkleTree, error) {
@@ -67,82 +111,31 @@ func New(nodeData []NodeData) (*MerkleTree, error) {
 	}, nil
 }
 
+// Replace replaces an existing node with new data, regenerating the tree hashes as required to remain accurate.
+func (t *MerkleTree) Replace(old NodeData, new NodeData) error {
+	// Find the node for the data
+	node := t.findLeafNode(old)
+	if node == nil {
+		return errors.New("merkle tree does not contain this data")
+	}
+
+	// Replace the node's data
+	node.data = new
+
+	// Regenerate the hashes from this node
+	t.regenerateHashes(node)
+
+	return nil
+}
+
 // RootHash returns the Merkle root (hash of the root node) of the tree.
 func (t *MerkleTree) RootHash() []byte {
 	return t.root.hash
 }
 
-// GenerateProof generates the proof for a piece of data.
-// If the data is not present in the tree this will return an error.
-// If the data is present in the tree this will return the hashes for each level in the tree and details of if the hashes returned
-// are the left-hand or right-hand hashes at each level (true if the left-hand, false if the right-hand).
-func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
-	// Find the node in the tree that contains the data
-	node := t.findNode(data)
-	if node == nil {
-		return nil, nil, errors.New("merkle tree does not contain this data")
-	}
-
-	// Build the proof and associated path
-	proof := make([][]byte, 0)
-	path := make([]bool, 0)
-	for {
-		if node.IsRoot() {
-			return proof, path, nil
-		}
-		if node.parent.left == node {
-			proof = append(proof, node.parent.right.hash)
-			path = append(path, false)
-		} else {
-			proof = append(proof, node.parent.left.hash)
-			path = append(path, true)
-		}
-		node = node.parent
-	}
-}
-
-// VerifyProof verifies a proof for a piece of data.
-// The proof and path are as per GenerateProof(), and root is the root hash of the tree against which the proof is to be verified.
-//
-// This returns true if the proof is verified, otherwise false.
-func VerifyProof(data NodeData, proof [][]byte, path []bool, root []byte) bool {
-	hash := hashBytes(data.Bytes())
-	for i := range proof {
-		if path[i] {
-			hash = hashBytes(append(proof[i], hash...))
-		} else {
-			hash = hashBytes(append(hash, proof[i]...))
-		}
-	}
-	return bytes.Equal(hash, root)
-}
-
-// ContainsData returns true if the tree contains the provided data, otherwise false.
-func (t *MerkleTree) ContainsData(data NodeData) bool {
-	return t.findNode(data) != nil
-}
-
-// findNode finds a node with the provided data.  If there is no matching node then this returns nil.
-func (t *MerkleTree) findNode(data NodeData) *Node {
-	hash := hashBytes(data.Bytes())
-	node := t.root
-	return findMatchingNode(node, hash)
-}
-
-// findMatchingNode is a recursive depth-first trawl through nodes to find matching data.
-func findMatchingNode(node *Node, hash []byte) *Node {
-	if node.IsLeaf() {
-		leafHash := hashBytes(node.data.Bytes())
-		if bytes.Equal(hash, leafHash) {
-			return node
-		}
-		return nil
-	}
-	leftNode := findMatchingNode(node.left, hash)
-	if leftNode != nil {
-		return leftNode
-	}
-	return findMatchingNode(node.right, hash)
+// String implements the stringer interface
+func (t *MerkleTree) String() string {
+	return fmt.Sprintf("%x", t.root.hash)
 }
 
 // buildParents builds the parent nodes for a list of nodes.  The nodes passed in can be leaves or intermediate nodes.
@@ -168,21 +161,6 @@ func buildParents(nodes []*Node) []*Node {
 	return parentNodes
 }
 
-// String implements the stringer interface
-func (t *MerkleTree) String() string {
-	return fmt.Sprintf("%x", t.root.hash)
-}
-
-// DOT creates a DOT representation of the tree.  It is generally used for external presentation.
-func (t *MerkleTree) DOT() string {
-	var builder strings.Builder
-	builder.WriteString("digraph MerkleTree {")
-	builder.WriteString("node [shape=rectangle margin=\"0.2,0.2\"];")
-	dotNode(t.root, &builder)
-	builder.WriteString("}")
-	return builder.String()
-}
-
 // dotNode creates a DOT representation of a particular node, including recursing through children
 func dotNode(node *Node, builder *strings.Builder) {
 	builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.hash, node.left.hash))
@@ -199,6 +177,42 @@ func dotNode(node *Node, builder *strings.Builder) {
 			builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.right.hash, node.right.data))
 		} else {
 			dotNode(node.right, builder)
+		}
+	}
+}
+
+// findLeafNode finds a leaf node with the provided data.  If there is no matching node then this returns nil.
+func (t *MerkleTree) findLeafNode(data NodeData) *Node {
+	hash := hashBytes(data.Bytes())
+	node := t.root
+	return findMatchingLeaf(node, hash)
+}
+
+// findMatchingLeaf is a recursive depth-first trawl through nodes to find the matching leaf node.
+func findMatchingLeaf(node *Node, hash []byte) *Node {
+	if node.IsLeaf() {
+		leafHash := hashBytes(node.data.Bytes())
+		if bytes.Equal(hash, leafHash) {
+			return node
+		}
+		return nil
+	}
+	leftNode := findMatchingLeaf(node.left, hash)
+	if leftNode != nil {
+		return leftNode
+	}
+	return findMatchingLeaf(node.right, hash)
+}
+
+// regenerateHashes regenerates the hashes for the tree from a given node to the root.
+func (t *MerkleTree) regenerateHashes(node *Node) {
+	if node.IsLeaf() {
+		node.hash = hashBytes(node.data.Bytes())
+		t.regenerateHashes(node.parent)
+	} else {
+		node.hash = hashBytes(append(node.left.hash, node.right.hash...))
+		if !node.IsRoot() {
+			t.regenerateHashes(node.parent)
 		}
 	}
 }

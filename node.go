@@ -22,12 +22,12 @@ type Node struct {
 	data   NodeData
 }
 
-// IsRoot returns true if the node is the root.  The root is defined as a node that has no parent.
-func (n *Node) IsRoot() bool {
-	return n.parent == nil
-}
-
 // IsLeaf returns true if the node is a leaf.  A leaf is defined as a node that has no children.
 func (n *Node) IsLeaf() bool {
 	return n.left == nil && n.right == nil
+}
+
+// IsRoot returns true if the node is the root.  The root is defined as a node that has no parent.
+func (n *Node) IsRoot() bool {
+	return n.parent == nil
 }
