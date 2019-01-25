@@ -1,4 +1,4 @@
-// Copyright © 2018 Weald Technology Trading
+// Copyright © 2018, 2019 Weald Technology Trading
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // Package merkletree is an implementation of a Merkle tree (https://en.wikipedia.org/wiki/Merkle_tree). It provides methods to
-// create a tree and generate and verify proofs.
+// create a tree and generate and verify proofs.  The hashing algorithm for the tree is selectable between BLAKE2b and Keccak256.
 //
 // Creating a Merkle tree requires a list of objects that implement the NodeData interface.  Once a tree has been created proofs
 // can be generated using the tree's GenerateProof() function.
@@ -21,8 +21,6 @@
 // tree.  This allows for efficient verification of proofs without requiring the entire Merkle tree to be stored or recreated.
 //
 // Implementation notes
-//
-// This package uses the BLAKE2b hashing algorithm (https://godoc.org/golang.org/x/crypto/blake2b) to generate node hashes.
 //
 // If there is an odd number of nodes at any level in the tree (except the root) the last node is used as both left and right nodes
 // when generating the hash for the parent node.
@@ -33,16 +31,24 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/wealdtech/go-merkletree/blake2b"
 )
 
 // MerkleTree is the top-level structure for the merkle tree.
 type MerkleTree struct {
+	// hash is a pointer to the hashing struct
+	hash HashFunc
 	root *Node
 }
 
 // ContainsData returns true if the tree contains the provided data, otherwise false.
-func (t *MerkleTree) ContainsData(data NodeData) bool {
-	return t.findLeafNode(data) != nil
+func (t *MerkleTree) ContainsData(data NodeData) (bool, error) {
+	node, err := t.findLeafNode(data)
+	if err != nil {
+		return false, err
+	}
+	return node != nil, err
 }
 
 // DOT creates a DOT representation of the tree.  It is generally used for external presentation.
@@ -61,7 +67,10 @@ func (t *MerkleTree) DOT() string {
 // are the left-hand or right-hand hashes at each level (true if the left-hand, false if the right-hand).
 func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
 	// Find the leaf node in the tree that contains the data
-	node := t.findLeafNode(data)
+	node, err := t.findLeafNode(data)
+	if err != nil {
+		return nil, nil, err
+	}
 	if node == nil {
 		return nil, nil, errors.New("merkle tree does not contain this data")
 	}
@@ -84,37 +93,56 @@ func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
 	}
 }
 
-// New creates a new Merkle tree using the provided data.
+// New creates a new Merkle tree using the provided data and default hash type.
 // nodeData must contain at least one element for it to be valid.
 func New(nodeData []NodeData) (*MerkleTree, error) {
+	return NewUsing(nodeData, blake2b.New())
+}
+
+// NewUsing creates a new Merkle tree using the provided data and hash type.
+// nodeData must contain at least one element for it to be valid.
+func NewUsing(nodeData []NodeData, hash HashType) (*MerkleTree, error) {
 	if len(nodeData) == 0 {
 		return nil, errors.New("tree must have at least 1 piece of data")
 	}
+
+	tree := &MerkleTree{
+		hash: hash.Hash,
+	}
+
 	// Step 1: turn the node data in to leaf nodes
 	var nodes []*Node
 	for _, data := range nodeData {
+		hash, err := tree.hash(data.Bytes())
+		if err != nil {
+			return nil, err
+		}
 		nodes = append(nodes, &Node{
-			hash: hashBytes(data.Bytes()),
+			hash: hash,
 			data: data,
 		})
 	}
 
 	// Step 2: iterate up the tree until only one node is left
 	for {
-		nodes = buildParents(nodes)
+		nodes = buildParents(nodes, tree.hash)
 		if len(nodes) == 1 {
 			break
 		}
 	}
-	return &MerkleTree{
-		root: nodes[0],
-	}, nil
+
+	// Set the root node and return the tree
+	tree.root = nodes[0]
+	return tree, nil
 }
 
 // Replace replaces an existing node with new data, regenerating the tree hashes as required to remain accurate.
 func (t *MerkleTree) Replace(old NodeData, new NodeData) error {
 	// Find the node for the data
-	node := t.findLeafNode(old)
+	node, err := t.findLeafNode(old)
+	if err != nil {
+		return err
+	}
 	if node == nil {
 		return errors.New("merkle tree does not contain this data")
 	}
@@ -133,6 +161,11 @@ func (t *MerkleTree) RootHash() []byte {
 	return t.root.hash
 }
 
+// Root returns the root node of the tree.
+func (t *MerkleTree) Root() *Node {
+	return t.root
+}
+
 // String implements the stringer interface
 func (t *MerkleTree) String() string {
 	return fmt.Sprintf("%x", t.root.hash)
@@ -140,22 +173,26 @@ func (t *MerkleTree) String() string {
 
 // buildParents builds the parent nodes for a list of nodes.  The nodes passed in can be leaves or intermediate nodes.
 // This is used by New() to construct the non-leaf nodes.
-func buildParents(nodes []*Node) []*Node {
+func buildParents(nodes []*Node, hash HashFunc) []*Node {
 	parentNodes := make([]*Node, 0)
 	for i := 0; i < len(nodes); i += 2 {
-		left := i
-		right := i + 1
-		if right == len(nodes) {
+		leftNode := nodes[i]
+		var rightNode *Node
+		if len(nodes) == i+1 {
 			// We have an odd nuber of nodes; use a copy of the left-hand node as the right-hand node to make it even
-			right = left
+			rightNode = nodes[i]
+		} else {
+			rightNode = nodes[i+1]
 		}
+		hash, _ := hash(append(leftNode.hash, rightNode.hash...))
+		// TODO swallowing error
 		parentNode := &Node{
-			left:  nodes[left],
-			right: nodes[right],
-			hash:  hashBytes(append(nodes[left].hash, nodes[right].hash...)),
+			left:  leftNode,
+			right: rightNode,
+			hash:  hash,
 		}
-		nodes[left].parent = parentNode
-		nodes[right].parent = parentNode
+		leftNode.parent = parentNode
+		rightNode.parent = parentNode
 		parentNodes = append(parentNodes, parentNode)
 	}
 	return parentNodes
@@ -182,37 +219,54 @@ func dotNode(node *Node, builder *strings.Builder) {
 }
 
 // findLeafNode finds a leaf node with the provided data.  If there is no matching node then this returns nil.
-func (t *MerkleTree) findLeafNode(data NodeData) *Node {
-	hash := hashBytes(data.Bytes())
+func (t *MerkleTree) findLeafNode(data NodeData) (*Node, error) {
+	hash, err := t.hash(data.Bytes())
+	if err != nil {
+		return nil, err
+	}
 	node := t.root
-	return findMatchingLeaf(node, hash)
+	return t.findMatchingLeaf(node, hash)
 }
 
 // findMatchingLeaf is a recursive depth-first trawl through nodes to find the matching leaf node.
-func findMatchingLeaf(node *Node, hash []byte) *Node {
+func (t *MerkleTree) findMatchingLeaf(node *Node, hash []byte) (*Node, error) {
 	if node.IsLeaf() {
-		leafHash := hashBytes(node.data.Bytes())
-		if bytes.Equal(hash, leafHash) {
-			return node
+		leafHash, err := t.hash(node.data.Bytes())
+		if err != nil {
+			return nil, err
 		}
-		return nil
+		if bytes.Equal(hash, leafHash) {
+			return node, nil
+		}
+		return nil, nil
 	}
-	leftNode := findMatchingLeaf(node.left, hash)
+	leftNode, err := t.findMatchingLeaf(node.left, hash)
+	if err != nil {
+		return nil, err
+	}
 	if leftNode != nil {
-		return leftNode
+		return leftNode, nil
 	}
-	return findMatchingLeaf(node.right, hash)
+	return t.findMatchingLeaf(node.right, hash)
 }
 
 // regenerateHashes regenerates the hashes for the tree from a given node to the root.
-func (t *MerkleTree) regenerateHashes(node *Node) {
+func (t *MerkleTree) regenerateHashes(node *Node) error {
+	var err error
 	if node.IsLeaf() {
-		node.hash = hashBytes(node.data.Bytes())
-		t.regenerateHashes(node.parent)
+		node.hash, err = t.hash(node.data.Bytes())
+		if err != nil {
+			return err
+		}
+		return t.regenerateHashes(node.parent)
 	} else {
-		node.hash = hashBytes(append(node.left.hash, node.right.hash...))
+		node.hash, err = t.hash(append(node.left.hash, node.right.hash...))
+		if err != nil {
+			return err
+		}
 		if !node.IsRoot() {
-			t.regenerateHashes(node.parent)
+			return t.regenerateHashes(node.parent)
 		}
 	}
+	return nil
 }

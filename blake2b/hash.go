@@ -1,4 +1,4 @@
-// Copyright © 2018 Weald Technology Trading
+// Copyright © 2019 Weald Technology Trading
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,14 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package merkletree
+package blake2b
 
-import (
-	"golang.org/x/crypto/blake2b"
-)
+import "golang.org/x/crypto/blake2b"
 
-// hashBytes generates a BLAKE2b hash from a byte array
-func hashBytes(data []byte) []byte {
+type BLAKE2b struct{}
+
+func New() *BLAKE2b {
+	return &BLAKE2b{}
+}
+
+// Hash generates a BLAKE2b hash from a byte array
+func (h *BLAKE2b) Hash(data []byte) ([]byte, error) {
 	hash := blake2b.Sum256(data)
-	return hash[:]
+	return hash[:], nil
 }

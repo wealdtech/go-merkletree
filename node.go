@@ -1,4 +1,4 @@
-// Copyright © 2018 Weald Technology Trading
+// Copyright © 2018, 2019 Weald Technology Trading
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 // limitations under the License.
 
 package merkletree
+
+import "fmt"
 
 // Node is a node in the merkle tree.  It keeps track of parent and child relationships, along with the data if this is a leaf.
 type Node struct {
@@ -30,4 +32,12 @@ func (n *Node) IsLeaf() bool {
 // IsRoot returns true if the node is the root.  The root is defined as a node that has no parent.
 func (n *Node) IsRoot() bool {
 	return n.parent == nil
+}
+
+// String implements the stringer interface
+func (n *Node) String() string {
+	if n.data != nil {
+		return fmt.Sprintf("%v", n.data)
+	}
+	return fmt.Sprintf("%v/\\%v", n.left, n.right)
 }
