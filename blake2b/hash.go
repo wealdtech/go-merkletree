@@ -13,16 +13,25 @@
 
 package blake2b
 
-import "golang.org/x/crypto/blake2b"
+import (
+	"errors"
 
+	"golang.org/x/crypto/blake2b"
+)
+
+// BLAKE2b is the Blake2b hashing method
 type BLAKE2b struct{}
 
+// New creates a new Blake2b hashing method
 func New() *BLAKE2b {
 	return &BLAKE2b{}
 }
 
 // Hash generates a BLAKE2b hash from a byte array
 func (h *BLAKE2b) Hash(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, errors.New("no data supplied")
+	}
 	hash := blake2b.Sum256(data)
 	return hash[:], nil
 }
