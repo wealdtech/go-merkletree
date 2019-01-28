@@ -61,13 +61,13 @@ func ExampleMerkleTree() {
 	}
 
 	// Generate a proof for 'Baz'
-	proof, path, err := tree.GenerateProof(baz)
+	proof, err := tree.GenerateProof(baz)
 	if err != nil {
 		panic(err)
 	}
 
 	// Verify the proof for 'Baz'
-	verified, err := merkletree.VerifyProof(baz, proof, path, rootHash)
+	verified, err := merkletree.VerifyProof(baz, proof, rootHash)
 	if err != nil {
 		panic(err)
 	}

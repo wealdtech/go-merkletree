@@ -19,3 +19,11 @@ type NodeData interface {
 	// that form the base of the Merkle tree.
 	Bytes() []byte
 }
+
+// ByteArrayData is a simple implementation of NodeData.  It is typecast to []byte to allow for easy use of existing
+// byte arrays as node data
+type ByteArrayData []byte
+
+func (b ByteArrayData) Bytes() []byte {
+	return []byte(b)
+}

@@ -65,14 +65,14 @@ func (t *MerkleTree) DOT() string {
 // If the data is not present in the tree this will return an error.
 // If the data is present in the tree this will return the hashes for each level in the tree and details of if the hashes returned
 // are the left-hand or right-hand hashes at each level (true if the left-hand, false if the right-hand).
-func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
+func (t *MerkleTree) GenerateProof(data NodeData) (*Proof, error) {
 	// Find the leaf node in the tree that contains the data
 	node, err := t.findLeafNode(data)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if node == nil {
-		return nil, nil, errors.New("merkle tree does not contain this data")
+		return nil, errors.New("merkle tree does not contain this data")
 	}
 
 	// Build the proof and associated path
@@ -80,7 +80,7 @@ func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
 	path := make([]bool, 0)
 	for {
 		if node.IsRoot() {
-			return proof, path, nil
+			return newProof(proof, path), nil
 		}
 		if node.parent.left == node {
 			proof = append(proof, node.parent.right.hash)
@@ -91,6 +91,49 @@ func (t *MerkleTree) GenerateProof(data NodeData) ([][]byte, []bool, error) {
 		}
 		node = node.parent
 	}
+}
+
+// NewFromRaw creates a new Merkle tree using the provided raw data and default hash type.
+// data must contain at least one element for it to be valid.
+func NewFromRaw(rawData [][]byte) (*MerkleTree, error) {
+	return NewFromRawUsing(rawData, blake2b.New())
+}
+
+// NewFromRawUsing creates a new Merkle tree using the provided raw data and supplied hash type.
+// data must contain at least one element for it to be valid.
+func NewFromRawUsing(rawData [][]byte, hash HashType) (*MerkleTree, error) {
+	if len(rawData) == 0 {
+		return nil, errors.New("tree must have at least 1 piece of data")
+	}
+
+	tree := &MerkleTree{
+		hash: hash.Hash,
+	}
+
+	// Step 1: turn the node data in to leaf nodes
+	var nodes []*Node
+	for _, data := range rawData {
+		hash, err := tree.hash(data)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, &Node{
+			hash: hash,
+			data: ByteArrayData(data),
+		})
+	}
+
+	// Step 2: iterate up the tree until only one node is left
+	for {
+		nodes = buildParents(nodes, tree.hash)
+		if len(nodes) == 1 {
+			break
+		}
+	}
+
+	// Set the root node and return the tree
+	tree.root = nodes[0]
+	return tree, nil
 }
 
 // New creates a new Merkle tree using the provided data and default hash type.
@@ -259,14 +302,13 @@ func (t *MerkleTree) regenerateHashes(node *Node) error {
 			return err
 		}
 		return t.regenerateHashes(node.parent)
-	} else {
-		node.hash, err = t.hash(append(node.left.hash, node.right.hash...))
-		if err != nil {
-			return err
-		}
-		if !node.IsRoot() {
-			return t.regenerateHashes(node.parent)
-		}
+	}
+	node.hash, err = t.hash(append(node.left.hash, node.right.hash...))
+	if err != nil {
+		return err
+	}
+	if !node.IsRoot() {
+		return t.regenerateHashes(node.parent)
 	}
 	return nil
 }

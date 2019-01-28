@@ -46,6 +46,15 @@ func _byteArray(input string) []byte {
 	return x
 }
 
+// _dataToRaw turns data in to its raw []byte version
+func _dataToRaw(data []NodeData) [][]byte {
+	res := make([][]byte, len(data))
+	for i := range data {
+		res[i] = data[i].Bytes()
+	}
+	return res
+}
+
 var tests = []struct {
 	// hash type to use
 	hashType HashType
@@ -165,6 +174,19 @@ func TestTreeNew(t *testing.T) {
 	}
 }
 
+func TestTreeNewFromRaw(t *testing.T) {
+	for i, test := range tests {
+		rawData := _dataToRaw(test.data)
+		tree, err := NewFromRawUsing(rawData, test.hashType)
+		if test.createErr != nil {
+			assert.Equal(t, test.createErr, err, fmt.Sprintf("expected error at test %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, test.rootHash, tree.RootHash(), fmt.Sprintf("unexpected root at test %d", i))
+		}
+	}
+}
+
 func TestTreeFind(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
@@ -217,9 +239,9 @@ func TestTreeProof(t *testing.T) {
 			tree, err := NewUsing(test.data, test.hashType)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j, data := range test.data {
-				proof, path, err := tree.GenerateProof(data)
+				proof, err := tree.GenerateProof(data)
 				assert.Nil(t, err, fmt.Sprintf("failed to create proof at test %d data %d", i, j))
-				proven, err := VerifyProofUsing(data, proof, path, tree.RootHash(), test.hashType)
+				proven, err := VerifyProofUsing(data, proof, tree.RootHash(), test.hashType)
 				assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
 				assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d data %d", i, j))
 			}
@@ -251,7 +273,7 @@ func TestTreeMissingProof(t *testing.T) {
 		if test.createErr == nil {
 			tree, err := NewUsing(test.data, test.hashType)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			_, _, err = tree.GenerateProof(missingData)
+			_, err = tree.GenerateProof(missingData)
 			assert.Equal(t, err, errors.New("merkle tree does not contain this data"))
 		}
 	}
@@ -277,9 +299,9 @@ func TestTreeProofRandom(t *testing.T) {
 	tree, err := NewUsing(data, blake2b.New())
 	assert.Nil(t, err, "failed to create tree")
 	for i := range data {
-		proof, path, err := tree.GenerateProof(data[i])
+		proof, err := tree.GenerateProof(data[i])
 		assert.Nil(t, err, fmt.Sprintf("failed to create proof at data %d", i))
-		proven, err := VerifyProof(data[i], proof, path, tree.RootHash())
+		proven, err := VerifyProof(data[i], proof, tree.RootHash())
 		assert.True(t, proven, fmt.Sprintf("failed to verify proof at data %d", i))
 	}
 }
