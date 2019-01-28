@@ -274,11 +274,7 @@ func (t *MerkleTree) findLeafNode(data NodeData) (*Node, error) {
 // findMatchingLeaf is a recursive depth-first trawl through nodes to find the matching leaf node.
 func (t *MerkleTree) findMatchingLeaf(node *Node, hash []byte) (*Node, error) {
 	if node.IsLeaf() {
-		leafHash, err := t.hash(node.data.Bytes())
-		if err != nil {
-			return nil, err
-		}
-		if bytes.Equal(hash, leafHash) {
+		if bytes.Equal(hash, node.hash) {
 			return node, nil
 		}
 		return nil, nil
