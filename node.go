@@ -15,29 +15,24 @@ package merkletree
 
 import "fmt"
 
-// Node is a node in the merkle tree.  It keeps track of parent and child relationships, along with the data if this is a leaf.
+// Node is a node in the merkle tree.  It keeps track of child relationships, along with the data if this is a leaf.
 type Node struct {
-	parent *Node
-	left   *Node
-	right  *Node
-	hash   []byte
-	data   NodeData
+	Left  *Node
+	Right *Node
+	Hash  []byte
+	Data  NodeData
 }
 
 // IsLeaf returns true if the node is a leaf.  A leaf is defined as a node that has no children.
 func (n *Node) IsLeaf() bool {
-	return n.left == nil && n.right == nil
-}
-
-// IsRoot returns true if the node is the root.  The root is defined as a node that has no parent.
-func (n *Node) IsRoot() bool {
-	return n.parent == nil
+	//return n.Left == nil && n.Right == nil
+	return n.Data != nil
 }
 
 // String implements the stringer interface
 func (n *Node) String() string {
-	if n.data != nil {
-		return fmt.Sprintf("%v", n.data)
+	if n.Data != nil {
+		return fmt.Sprintf("%v", n.Data)
 	}
-	return fmt.Sprintf("%v/\\%v", n.left, n.right)
+	return fmt.Sprintf("%v/\\%v", n.Left, n.Right)
 }

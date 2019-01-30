@@ -21,14 +21,14 @@ import (
 
 func TestNodeString(t *testing.T) {
 	n1 := &Node{
-		data: &testData{data: "n1"},
+		Data: &testData{data: "n1"},
 	}
 	n2 := &Node{
-		data: &testData{data: "n2"},
+		Data: &testData{data: "n2"},
 	}
 	n3 := &Node{
-		left:  n1,
-		right: n2,
+		Left:  n1,
+		Right: n2,
 	}
 	assert.Equal(t, "n1", n1.String(), "incorrect value for data node")
 	assert.Equal(t, "n2", n2.String(), "incorrect value for data node")

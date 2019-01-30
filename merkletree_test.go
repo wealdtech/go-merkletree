@@ -201,38 +201,6 @@ func TestTreeFind(t *testing.T) {
 	}
 }
 
-func TestTreeReplace(t *testing.T) {
-	for i, test := range tests {
-		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
-			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			// Replace an item
-			replaceData := &testData{data: "replace"}
-			err = tree.Replace(test.data[0], replaceData)
-			assert.Nil(t, err, fmt.Sprintf("failed to replace data at test %d", i))
-			assert.Equal(t, test.replaceHash, tree.RootHash(), fmt.Sprintf("unexpected root at test %d", i))
-			// Revert the replacement
-			err = tree.Replace(replaceData, test.data[0])
-			assert.Nil(t, err, fmt.Sprintf("failed to replace data at test %d", i))
-			assert.Equal(t, test.rootHash, tree.RootHash(), fmt.Sprintf("unexpected root at test %d", i))
-		}
-	}
-}
-
-func TestTreeReplaceUnknown(t *testing.T) {
-	for i, test := range tests {
-		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
-			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			// Attempt to replace a non-existant item
-			bogusData := &testData{data: "not here"}
-			replaceData := &testData{data: "replace"}
-			err = tree.Replace(bogusData, replaceData)
-			assert.Equal(t, errors.New("merkle tree does not contain this data"), err, fmt.Sprintf("unexpected error at test %d", i))
-		}
-	}
-}
-
 func TestTreeProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {

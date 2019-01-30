@@ -39,7 +39,9 @@ import (
 type MerkleTree struct {
 	// hash is a pointer to the hashing struct
 	hash HashFunc
-	root *Node
+	// depth is the number of levels in the tree, including the root and leaf levels
+	depth int
+	root  *Node
 }
 
 // ContainsData returns true if the tree contains the provided data, otherwise false.
@@ -66,31 +68,29 @@ func (t *MerkleTree) DOT() string {
 // If the data is present in the tree this will return the hashes for each level in the tree and details of if the hashes returned
 // are the left-hand or right-hand hashes at each level (true if the left-hand, false if the right-hand).
 func (t *MerkleTree) GenerateProof(data NodeData) (*Proof, error) {
-	// Find the leaf node in the tree that contains the data
-	node, err := t.findLeafNode(data)
+	// Find the path to the node containing the data
+	path, err := t.pathToLeaf(data)
 	if err != nil {
 		return nil, err
 	}
-	if node == nil {
+	if path == nil {
 		return nil, errors.New("merkle tree does not contain this data")
 	}
+	proof := make([][]byte, len(path)-1)
+	proofPath := make([]bool, len(path)-1)
 
-	// Build the proof and associated path
-	proof := make([][]byte, 0)
-	path := make([]bool, 0)
-	for {
-		if node.IsRoot() {
-			return newProof(proof, path), nil
-		}
-		if node.parent.left == node {
-			proof = append(proof, node.parent.right.hash)
-			path = append(path, false)
+	for i := 1; i < len(path); i++ {
+		if path[i-1].Left == path[i] {
+			// We want the right-hand node
+			proof[len(path)-i-1] = path[i-1].Right.Hash
+			proofPath[len(path)-i-1] = false
 		} else {
-			proof = append(proof, node.parent.left.hash)
-			path = append(path, true)
+			// We want the left-hand node
+			proof[len(path)-i-1] = path[i-1].Left.Hash
+			proofPath[len(path)-i-1] = true
 		}
-		node = node.parent
 	}
+	return newProof(proof, proofPath), nil
 }
 
 // NewFromRaw creates a new Merkle tree using the provided raw data and default hash type.
@@ -110,29 +110,34 @@ func NewFromRawUsing(rawData [][]byte, hash HashType) (*MerkleTree, error) {
 		hash: hash.Hash,
 	}
 
-	// Step 1: turn the node data in to leaf nodes
-	var nodes []*Node
-	for _, data := range rawData {
+	// Turn the node data in to leaf nodes
+	nodes := make([]Node, len(rawData))
+	for i, data := range rawData {
 		hash, err := tree.hash(data)
 		if err != nil {
 			return nil, err
 		}
-		nodes = append(nodes, &Node{
-			hash: hash,
-			data: ByteArrayData(data),
-		})
+		nodes[i].Hash = hash
+		nodes[i].Data = ByteArrayData(data)
 	}
 
-	// Step 2: iterate up the tree until only one node is left
+	// Iterate up the tree until only one node is returned
+	branches := &nodes
 	for {
-		nodes = buildParents(nodes, tree.hash)
-		if len(nodes) == 1 {
+		branches = tree.buildBranches(branches)
+		if len(*branches) == 1 {
 			break
 		}
 	}
+	tree.root = &(*branches)[0]
 
-	// Set the root node and return the tree
-	tree.root = nodes[0]
+	// Calculate depth of tree
+	depth := 1
+	for tmp := tree.root; tmp.Left != nil; tmp = tmp.Left {
+		depth++
+	}
+	tree.depth = depth
+
 	return tree, nil
 }
 
@@ -153,55 +158,40 @@ func NewUsing(nodeData []NodeData, hash HashType) (*MerkleTree, error) {
 		hash: hash.Hash,
 	}
 
-	// Step 1: turn the node data in to leaf nodes
-	var nodes []*Node
-	for _, data := range nodeData {
+	// Turn the node data in to leaf nodes
+	nodes := make([]Node, len(nodeData))
+	for i, data := range nodeData {
 		hash, err := tree.hash(data.Bytes())
 		if err != nil {
 			return nil, err
 		}
-		nodes = append(nodes, &Node{
-			hash: hash,
-			data: data,
-		})
+		nodes[i].Hash = hash
+		nodes[i].Data = data
 	}
 
-	// Step 2: iterate up the tree until only one node is left
+	// Iterate up the tree until only one node is returned
+	branches := &nodes
 	for {
-		nodes = buildParents(nodes, tree.hash)
-		if len(nodes) == 1 {
+		branches = tree.buildBranches(branches)
+		if len(*branches) == 1 {
 			break
 		}
 	}
+	tree.root = &(*branches)[0]
 
-	// Set the root node and return the tree
-	tree.root = nodes[0]
+	// Calculate depth of tree
+	depth := 1
+	for tmp := tree.root; tmp.Left != nil; tmp = tmp.Left {
+		depth++
+	}
+	tree.depth = depth
+
 	return tree, nil
-}
-
-// Replace replaces an existing node with new data, regenerating the tree hashes as required to remain accurate.
-func (t *MerkleTree) Replace(old NodeData, new NodeData) error {
-	// Find the node for the data
-	node, err := t.findLeafNode(old)
-	if err != nil {
-		return err
-	}
-	if node == nil {
-		return errors.New("merkle tree does not contain this data")
-	}
-
-	// Replace the node's data
-	node.data = new
-
-	// Regenerate the hashes from this node
-	t.regenerateHashes(node)
-
-	return nil
 }
 
 // RootHash returns the Merkle root (hash of the root node) of the tree.
 func (t *MerkleTree) RootHash() []byte {
-	return t.root.hash
+	return t.root.Hash
 }
 
 // Root returns the root node of the tree.
@@ -211,54 +201,102 @@ func (t *MerkleTree) Root() *Node {
 
 // String implements the stringer interface
 func (t *MerkleTree) String() string {
-	return fmt.Sprintf("%x", t.root.hash)
+	return fmt.Sprintf("%x", t.root.Hash)
 }
 
-// buildParents builds the parent nodes for a list of nodes.  The nodes passed in can be leaves or intermediate nodes.
+// buildBranches builds the branch nodes for a list of nodes.  The nodes passed in can be leaves or branches.
 // This is used by New() to construct the non-leaf nodes.
-func buildParents(nodes []*Node, hash HashFunc) []*Node {
-	parentNodes := make([]*Node, 0)
+func (t *MerkleTree) buildBranches(nodesPtr *[]Node) *[]Node {
+	nodes := *nodesPtr
+	var parentNodes []Node
+	if len(nodes)%2 == 1 {
+		parentNodes = make([]Node, len(nodes)/2+1)
+	} else {
+		parentNodes = make([]Node, len(nodes)/2)
+	}
 	for i := 0; i < len(nodes); i += 2 {
+		parentNode := &parentNodes[i/2]
 		leftNode := nodes[i]
-		var rightNode *Node
+		var rightNode Node
 		if len(nodes) == i+1 {
-			// We have an odd nuber of nodes; use a copy of the left-hand node as the right-hand node to make it even
+			// We have an odd nuber of nodes; use the left-hand node as both nodes to make it even
 			rightNode = nodes[i]
 		} else {
 			rightNode = nodes[i+1]
 		}
-		hash, _ := hash(append(leftNode.hash, rightNode.hash...))
+		parentNode.Hash, _ = t.hash(append(leftNode.Hash, rightNode.Hash...))
 		// TODO swallowing error
-		parentNode := &Node{
-			left:  leftNode,
-			right: rightNode,
-			hash:  hash,
-		}
-		leftNode.parent = parentNode
-		rightNode.parent = parentNode
-		parentNodes = append(parentNodes, parentNode)
+		parentNode.Left = &leftNode
+		parentNode.Right = &rightNode
 	}
-	return parentNodes
+	return &parentNodes
 }
 
 // dotNode creates a DOT representation of a particular node, including recursing through children
 func dotNode(node *Node, builder *strings.Builder) {
-	builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.hash, node.left.hash))
-	if node.left.IsLeaf() {
-		builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.left.data))
-		builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.left.hash, node.left.data))
+	builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.Hash, node.Left.Hash))
+	if node.Left.IsLeaf() {
+		builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.Left.Data))
+		builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.Left.Hash, node.Left.Data))
 	} else {
-		dotNode(node.left, builder)
+		dotNode(node.Left, builder)
 	}
-	if node.right != node.left {
-		builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.hash, node.right.hash))
-		if node.right.IsLeaf() {
-			builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.right.data))
-			builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.right.hash, node.right.data))
+	if node.Right.String() != node.Left.String() {
+		builder.WriteString(fmt.Sprintf("\"%x\"->\"%x\";", node.Hash, node.Right.Hash))
+		if node.Right.IsLeaf() {
+			builder.WriteString(fmt.Sprintf("\"%v\" [shape=oval];", node.Right.Data))
+			builder.WriteString(fmt.Sprintf("\"%x\"->\"%v\";", node.Right.Hash, node.Right.Data))
 		} else {
-			dotNode(node.right, builder)
+			dotNode(node.Right, builder)
 		}
 	}
+}
+
+// pathToLeaf provides the path from the root to the leaf with the provided data.
+// If there is no matching node this returns nil
+func (t *MerkleTree) pathToLeaf(data NodeData) ([]*Node, error) {
+	hash, err := t.hash(data.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	node := t.root
+	path := make([]*Node, t.depth)
+	found, err := t.pathToLeafNode(node, hash, &path, 0)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, nil
+	}
+	return path, nil
+}
+
+// pathToLeafNode is a recursive depth-first trawl through nodes to generate the path of branches from the root to the given node.
+// The path does not include the root or the leaf
+func (t *MerkleTree) pathToLeafNode(node *Node, hash []byte, path *[]*Node, level int) (bool, error) {
+	if node.IsLeaf() {
+		if bytes.Equal(hash, node.Hash) {
+			(*path)[level] = node
+			return true, nil
+		}
+		return false, nil
+	}
+	found, err := t.pathToLeafNode(node.Left, hash, path, level+1)
+	if err != nil {
+		return false, err
+	}
+	if found {
+		(*path)[level] = node
+		return found, nil
+	}
+	found, err = t.pathToLeafNode(node.Right, hash, path, level+1)
+	if err != nil {
+		return false, err
+	}
+	if found {
+		(*path)[level] = node
+	}
+	return found, nil
 }
 
 // findLeafNode finds a leaf node with the provided data.  If there is no matching node then this returns nil.
@@ -274,37 +312,17 @@ func (t *MerkleTree) findLeafNode(data NodeData) (*Node, error) {
 // findMatchingLeaf is a recursive depth-first trawl through nodes to find the matching leaf node.
 func (t *MerkleTree) findMatchingLeaf(node *Node, hash []byte) (*Node, error) {
 	if node.IsLeaf() {
-		if bytes.Equal(hash, node.hash) {
+		if bytes.Equal(hash, node.Hash) {
 			return node, nil
 		}
 		return nil, nil
 	}
-	leftNode, err := t.findMatchingLeaf(node.left, hash)
+	leftNode, err := t.findMatchingLeaf(node.Left, hash)
 	if err != nil {
 		return nil, err
 	}
 	if leftNode != nil {
 		return leftNode, nil
 	}
-	return t.findMatchingLeaf(node.right, hash)
-}
-
-// regenerateHashes regenerates the hashes for the tree from a given node to the root.
-func (t *MerkleTree) regenerateHashes(node *Node) error {
-	var err error
-	if node.IsLeaf() {
-		node.hash, err = t.hash(node.data.Bytes())
-		if err != nil {
-			return err
-		}
-		return t.regenerateHashes(node.parent)
-	}
-	node.hash, err = t.hash(append(node.left.hash, node.right.hash...))
-	if err != nil {
-		return err
-	}
-	if !node.IsRoot() {
-		return t.regenerateHashes(node.parent)
-	}
-	return nil
+	return t.findMatchingLeaf(node.Right, hash)
 }
