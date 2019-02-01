@@ -14,8 +14,6 @@
 package merkletree_test
 
 import (
-	"fmt"
-
 	merkletree "github.com/wealdtech/go-merkletree"
 )
 
@@ -34,33 +32,22 @@ func ExampleMerkleTree() {
 		panic(err)
 	}
 
-	fmt.Sprintf("%v", tree)
-	//	// Fetch the root hash of the tree
-	//	rootHash := tree.RootHash()
-	//
-	//	baz := data[2]
-	//
-	//	// Confirm that 'Baz' exists in the tree
-	//	found, err := tree.ContainsData(baz)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	if !found {
-	//		panic("failed to find Baz")
-	//	}
-	//
-	//	// Generate a proof for 'Baz'
-	//	proof, err := tree.GenerateProof(baz)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	// Verify the proof for 'Baz'
-	//	verified, err := merkletree.VerifyProof(baz, proof, rootHash)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	if !verified {
-	//		panic("failed to verify proof for Baz")
-	//	}
+	// Fetch the root hash of the tree
+	root := tree.Root()
+
+	baz := data[2]
+	// Generate a proof for 'Baz'
+	proof, err := tree.GenerateProof(baz)
+	if err != nil {
+		panic(err)
+	}
+
+	// Verify the proof for 'Baz'
+	verified, err := merkletree.VerifyProof(baz, proof, root)
+	if err != nil {
+		panic(err)
+	}
+	if !verified {
+		panic("failed to verify proof for Baz")
+	}
 }

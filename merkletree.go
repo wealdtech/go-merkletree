@@ -12,18 +12,19 @@
 // limitations under the License.
 
 // Package merkletree is an implementation of a Merkle tree (https://en.wikipedia.org/wiki/Merkle_tree). It provides methods to
-// create a tree and generate and verify proofs.  The hashing algorithm for the tree is selectable between BLAKE2b and Keccak256.
+// create a tree and generate and verify proofs.  The hashing algorithm for the tree is selectable between BLAKE2b and Keccak256,
+// or you can supply your own.
 //
-// Creating a Merkle tree requires a list of objects that implement the NodeData interface.  Once a tree has been created proofs
-// can be generated using the tree's GenerateProof() function.
+// Creating a Merkle tree requires a list of values that are each byte arrays.  Once a tree has been created proofs can be generated
+// using the tree's GenerateProof() function.
 //
-// The package includes a function to verify a generated proof given only the data, proof and the root hash of the relevant Merkle
-// tree.  This allows for efficient verification of proofs without requiring the entire Merkle tree to be stored or recreated.
+// The package includes a function to verify a generated proof given only the data to prove, proof and the root hash of the relevant
+// Merkle tree.  This allows for efficient verification of proofs without requiring the entire Merkle tree to be stored or recreated.
 //
 // Implementation notes
 //
-// If there is an odd number of nodes at any level in the tree (except the root) the last node is used as both left and right nodes
-// when generating the hash for the parent node.
+// The tree pads its values to the next highest power of 2; values not supplied are treated as 0.  This can be seen graphically by
+// generating a DOT representation of the graph with DOT().
 package merkletree
 
 import (
@@ -47,6 +48,7 @@ type MerkleTree struct {
 }
 
 // DOT creates a DOT representation of the tree.  It is generally used for external presentation.
+// This takes two optional formatters for []byte data: the first for leaf data and the second for branches.
 func (t *MerkleTree) DOT(lf Formatter, bf Formatter) string {
 	if lf == nil {
 		lf = new(TruncatedHexFormatter)

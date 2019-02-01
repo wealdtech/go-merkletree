@@ -148,22 +148,6 @@ func TestProof(t *testing.T) {
 	}
 }
 
-//func TestMissingData(t *testing.T) {
-//	missingData := &testData{
-//		data: "missing",
-//	}
-//	for i, test := range tests {
-//		if test.createErr == nil {
-//			tree, err := NewUsing(test.data, test.hashType)
-//			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-//			found, err := tree.ContainsData(missingData)
-//			assert.Nil(t, err, fmt.Sprintf("failed to check for data at test %d", i))
-//			assert.False(t, found, fmt.Sprintf("found non-existant data at test %d", i))
-//		}
-//	}
-//
-//}
-//
 func TestMissingProof(t *testing.T) {
 	missingData := []byte("missing")
 	for i, test := range tests {
