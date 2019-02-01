@@ -21,15 +21,15 @@ import (
 
 // Proof is a proof of a Merkle tree
 type Proof struct {
-	hashes [][]byte
-	path   []bool
+	Hashes [][]byte
+	Index  uint64
 }
 
 // newProof generates a Merkle proof
-func newProof(hashes [][]byte, path []bool) *Proof {
+func newProof(hashes [][]byte, index uint64) *Proof {
 	return &Proof{
-		hashes: hashes,
-		path:   path,
+		Hashes: hashes,
+		Index:  index,
 	}
 }
 
@@ -39,42 +39,30 @@ func newProof(hashes [][]byte, path []bool) *Proof {
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProof(data NodeData, proof *Proof, root []byte) (bool, error) {
+func VerifyProof(data []byte, proof *Proof, root []byte) (bool, error) {
 	return VerifyProofUsing(data, proof, root, blake2b.New())
 }
 
-func VerifyProofUsing(data NodeData, proof *Proof, root []byte, hashType HashType) (bool, error) {
-	dataHash, err := hashType.Hash((data.Bytes()))
-	if err != nil {
-		return false, err
-	}
-	return VerifyProofFromHashUsing(dataHash, proof, root, hashType)
-}
-
-func VerifyProofFromHash(dataHash []byte, proof *Proof, root []byte) (bool, error) {
-	return VerifyProofFromHashUsing(dataHash, proof, root, blake2b.New())
-}
-
-// VerifyProofFromHashUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
+// VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
 // The proof and path are as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
 // be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for checking
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProofFromHashUsing(dataHash []byte, proof *Proof, root []byte, hashType HashType) (bool, error) {
-	var err error
-	for i := range proof.hashes {
-		if proof.path[i] {
-			dataHash, err = hashType.Hash(append(proof.hashes[i], dataHash...))
-			if err != nil {
-				return false, err
-			}
+func VerifyProofUsing(data []byte, proof *Proof, root []byte, hashType HashType) (bool, error) {
+	dataHash := hashType.Hash(data)
+	index := proof.Index + (1 << uint(len(proof.Hashes)))
+	//	if index >= uint64(len(proof.Hashes)) {
+	//		return false, errors.New("invalid proof")
+	//	}
+
+	for _, hash := range proof.Hashes {
+		if index%2 == 0 {
+			dataHash = hashType.Hash(append(dataHash, hash...))
 		} else {
-			dataHash, err = hashType.Hash(append(dataHash, proof.hashes[i]...))
-			if err != nil {
-				return false, err
-			}
+			dataHash = hashType.Hash(append(hash, dataHash...))
 		}
+		index = index >> 1
 	}
 	return bytes.Equal(dataHash, root), nil
 }

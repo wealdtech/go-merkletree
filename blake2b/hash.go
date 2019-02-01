@@ -14,8 +14,6 @@
 package blake2b
 
 import (
-	"errors"
-
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -28,10 +26,7 @@ func New() *BLAKE2b {
 }
 
 // Hash generates a BLAKE2b hash from a byte array
-func (h *BLAKE2b) Hash(data []byte) ([]byte, error) {
-	if len(data) == 0 {
-		return nil, errors.New("no data supplied")
-	}
+func (h *BLAKE2b) Hash(data []byte) []byte {
 	hash := blake2b.Sum256(data)
-	return hash[:], nil
+	return hash[:]
 }

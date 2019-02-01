@@ -25,47 +25,21 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// testData is a structure that follows Data, allowing it to be stored in a Merkle tree
-type testData struct {
-	data string
-}
-
-// Bytes provides a byte array that represents the testData
-func (t *testData) Bytes() []byte {
-	return []byte(t.data)
-}
-
-// String implements the stringer interface
-func (t *testData) String() string {
-	return t.data
-}
-
 // _byteArray is a helper to turn a string in to a byte array
 func _byteArray(input string) []byte {
 	x, _ := hex.DecodeString(input)
 	return x
 }
 
-// _dataToRaw turns data in to its raw []byte version
-func _dataToRaw(data []NodeData) [][]byte {
-	res := make([][]byte, len(data))
-	for i := range data {
-		res[i] = data[i].Bytes()
-	}
-	return res
-}
-
 var tests = []struct {
 	// hash type to use
 	hashType HashType
 	// data to create the node
-	data []NodeData
+	data [][]byte
 	// expected error when attempting to create the tree
 	createErr error
 	// root hash after the tree has been created
-	rootHash []byte
-	// root hash after the first node in the tree has been replaced
-	replaceHash []byte
+	root []byte
 	// DOT representation of tree
 	dot string
 }{
@@ -75,133 +49,90 @@ var tests = []struct {
 	},
 	{ // 1
 		hashType:  blake2b.New(),
-		data:      []NodeData{},
+		data:      [][]byte{},
 		createErr: errors.New("tree must have at least 1 piece of data"),
 	},
 	{ // 2
 		hashType: blake2b.New(),
-		data: []NodeData{
-			&testData{
-				data: "Foo",
-			},
-			&testData{
-				data: "Bar",
-			},
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
 		},
-		rootHash:    _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
-		replaceHash: _byteArray("22f41fa6545fca4bf63ffa589d18cb96b15eac6d29ef00eda77259f379c7168c"),
-		dot:         "digraph MerkleTree {node [shape=rectangle margin=\"0.2,0.2\"];\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\";\"Foo\" [shape=oval];\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\"->\"Foo\";\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\";\"Bar\" [shape=oval];\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\"->\"Bar\";}",
+		root: _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"7b50…c81f\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"03c7…6406\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e9e0…f637\"];}",
 	},
 	{ // 3
 		hashType: keccak256.New(),
-		data: []NodeData{
-			&testData{
-				data: "Foo",
-			},
-			&testData{
-				data: "Bar",
-			},
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
 		},
-		rootHash:    _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
-		replaceHash: _byteArray("1d2b554ce29d3648cd9e3c59dcf76b4a884a73c472ae4b315c03edeb84f67986"),
-		dot:         "digraph MerkleTree {node [shape=rectangle margin=\"0.2,0.2\"];\"fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed\"->\"b608c74283f334e1f047dbbf1daa2407d41d4689aca67c422796f936acce16b7\";\"Foo\" [shape=oval];\"b608c74283f334e1f047dbbf1daa2407d41d4689aca67c422796f936acce16b7\"->\"Foo\";\"fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed\"->\"c1620375a8984b68a8a35054aae54aa69d13022892c65c358427e8a2c391985f\";\"Bar\" [shape=oval];\"c1620375a8984b68a8a35054aae54aa69d13022892c65c358427e8a2c391985f\"->\"Bar\";}",
+		root: _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"b608…16b7\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"c162…985f\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"fb6c…aeed\"];}",
 	},
 	{ // 4
 		hashType: blake2b.New(),
-		data: []NodeData{
-			&testData{
-				data: "Foo",
-			},
+		data: [][]byte{
+			[]byte("Foo"),
 		},
-		rootHash:    _byteArray("66dcea1632618af6a2a3f991fb8eac772cc9a92d6d24d3d53e303cfb7918ed3f"),
-		replaceHash: _byteArray("c5ad026795f768b3a1a391c6fed2fd7a1cfe7f87ef7d3fafe5e3113906c5a3c1"),
-		dot:         "digraph MerkleTree {node [shape=rectangle margin=\"0.2,0.2\"];\"66dcea1632618af6a2a3f991fb8eac772cc9a92d6d24d3d53e303cfb7918ed3f\"->\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\";\"Foo\" [shape=oval];\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\"->\"Foo\";}",
+		root: _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->1;1 [label=\"7b50…c81f\"];{rank=same;1};}",
 	},
 	{ // 5
 		hashType: blake2b.New(),
-		data: []NodeData{
-			&testData{
-				data: "Foo",
-			},
-			&testData{
-				data: "Bar",
-			},
-			&testData{
-				data: "Baz",
-			},
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+			[]byte("Baz"),
 		},
-		rootHash:    _byteArray("4a7c101cd25d910af4c20030c0c52ba71a5c110554de4127a5a3cad03b13ea03"),
-		replaceHash: _byteArray("a08f746db871db869251dbf86e72388b06054d3076fcf13f000b2803df5e284e"),
-		dot:         "digraph MerkleTree {node [shape=rectangle margin=\"0.2,0.2\"];\"4a7c101cd25d910af4c20030c0c52ba71a5c110554de4127a5a3cad03b13ea03\"->\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\";\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\";\"Foo\" [shape=oval];\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\"->\"Foo\";\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\";\"Bar\" [shape=oval];\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\"->\"Bar\";\"4a7c101cd25d910af4c20030c0c52ba71a5c110554de4127a5a3cad03b13ea03\"->\"50cdef2fd6fd3c18ad0b10d52524d64a28f6f3216af68b46d79323bad2e4e728\";\"50cdef2fd6fd3c18ad0b10d52524d64a28f6f3216af68b46d79323bad2e4e728\"->\"6d5fd2391f8abb79469edf404fd1751a74056ce54ee438c128bba9e680242ae0\";\"Baz\" [shape=oval];\"6d5fd2391f8abb79469edf404fd1751a74056ce54ee438c128bba9e680242ae0\"->\"Baz\";}",
+		root: _byteArray("635ca493fe20a7b8485d2e4c650e33444664b4ce0773c36d2a9da79176f6889c"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->4;4 [label=\"7b50…c81f\"];4->2;\"Bar\" [shape=oval];\"Bar\"->5;5 [label=\"03c7…6406\"];4->5 [style=invisible arrowhead=none];5->2;\"Baz\" [shape=oval];\"Baz\"->6;6 [label=\"6d5f…2ae0\"];5->6 [style=invisible arrowhead=none];6->3;7 [label=\"0000…0000\"];6->7 [style=invisible arrowhead=none];7->3;{rank=same;4;5;6;7};3 [label=\"13c7…a929\"];3->1;2 [label=\"e9e0…f637\"];2->1;1 [label=\"635c…889c\"];}",
 	},
 	{ // 6
 		hashType: blake2b.New(),
-		data: []NodeData{
-			&testData{
-				data: "Foo",
-			},
-			&testData{
-				data: "Bar",
-			},
-			&testData{
-				data: "Baz",
-			},
-			&testData{
-				data: "Qux",
-			},
-			&testData{
-				data: "Quux",
-			},
-			&testData{
-				data: "Quuz",
-			},
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+			[]byte("Baz"),
+			[]byte("Qux"),
+			[]byte("Quux"),
+			[]byte("Quuz"),
 		},
-		rootHash:    _byteArray("9bbfa790a5c4c02f63b474e6e5d47410406fcc93449884dd59816f8557ac5d3e"),
-		replaceHash: _byteArray("a7ed90b143723bc921568a3a2fb18e93c2cae7e0748122e2cab9815e3500676a"),
-		dot:         "digraph MerkleTree {node [shape=rectangle margin=\"0.2,0.2\"];\"9bbfa790a5c4c02f63b474e6e5d47410406fcc93449884dd59816f8557ac5d3e\"->\"7799922ba259c0529cdfb9f974024d45abef9b3190850bc23fc5145cf81c9592\";\"7799922ba259c0529cdfb9f974024d45abef9b3190850bc23fc5145cf81c9592\"->\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\";\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\";\"Foo\" [shape=oval];\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\"->\"Foo\";\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"->\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\";\"Bar\" [shape=oval];\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\"->\"Bar\";\"7799922ba259c0529cdfb9f974024d45abef9b3190850bc23fc5145cf81c9592\"->\"f27788f150c5f45bb618f23034f12d3777f5348ec83ea75e3e81f467b9d67fd5\";\"f27788f150c5f45bb618f23034f12d3777f5348ec83ea75e3e81f467b9d67fd5\"->\"6d5fd2391f8abb79469edf404fd1751a74056ce54ee438c128bba9e680242ae0\";\"Baz\" [shape=oval];\"6d5fd2391f8abb79469edf404fd1751a74056ce54ee438c128bba9e680242ae0\"->\"Baz\";\"f27788f150c5f45bb618f23034f12d3777f5348ec83ea75e3e81f467b9d67fd5\"->\"d5d15f829b9736f8054c71c9ba480d1dca16f4575f6b805e3dd37cdc5aa33cda\";\"Qux\" [shape=oval];\"d5d15f829b9736f8054c71c9ba480d1dca16f4575f6b805e3dd37cdc5aa33cda\"->\"Qux\";\"9bbfa790a5c4c02f63b474e6e5d47410406fcc93449884dd59816f8557ac5d3e\"->\"8e42309e472ef8e84af84669decd20bcf2907fa5c69626b6f9cb34925426c594\";\"8e42309e472ef8e84af84669decd20bcf2907fa5c69626b6f9cb34925426c594\"->\"3705db8dede3991c0846bae4f9de86a2c5957283cdd3434337ee1bb98b2d4377\";\"3705db8dede3991c0846bae4f9de86a2c5957283cdd3434337ee1bb98b2d4377\"->\"2fec764e01bb41b8fcf07e93fa126fdb7419c8f5905c9149074a22f56f171151\";\"Quux\" [shape=oval];\"2fec764e01bb41b8fcf07e93fa126fdb7419c8f5905c9149074a22f56f171151\"->\"Quux\";\"3705db8dede3991c0846bae4f9de86a2c5957283cdd3434337ee1bb98b2d4377\"->\"aff2f20f3fd056c4ae59132fea6d5691fa7dc274ab13eef5e7cb06df856462e5\";\"Quuz\" [shape=oval];\"aff2f20f3fd056c4ae59132fea6d5691fa7dc274ab13eef5e7cb06df856462e5\"->\"Quuz\";}",
+		root: _byteArray("4e6bdbaa326a760c45b5805898d7e9e788d65ffe7e27e690cd6999f1a5d64400"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->8;8 [label=\"7b50…c81f\"];8->4;\"Bar\" [shape=oval];\"Bar\"->9;9 [label=\"03c7…6406\"];8->9 [style=invisible arrowhead=none];9->4;\"Baz\" [shape=oval];\"Baz\"->10;10 [label=\"6d5f…2ae0\"];9->10 [style=invisible arrowhead=none];10->5;\"Qux\" [shape=oval];\"Qux\"->11;11 [label=\"d5d1…3cda\"];10->11 [style=invisible arrowhead=none];11->5;\"Quux\" [shape=oval];\"Quux\"->12;12 [label=\"2fec…1151\"];11->12 [style=invisible arrowhead=none];12->6;\"Quuz\" [shape=oval];\"Quuz\"->13;13 [label=\"aff2…62e5\"];12->13 [style=invisible arrowhead=none];13->6;14 [label=\"0000…0000\"];13->14 [style=invisible arrowhead=none];14->7;15 [label=\"0000…0000\"];14->15 [style=invisible arrowhead=none];15->7;{rank=same;8;9;10;11;12;13;14;15};7 [label=\"0e57…e3a8\"];7->3;6 [label=\"3705…4377\"];6->3;5 [label=\"f277…7fd5\"];5->2;4 [label=\"e9e0…f637\"];4->2;3 [label=\"7723…f470\"];3->1;2 [label=\"7799…9592\"];2->1;1 [label=\"4e6b…4400\"];}",
+	},
+	{ // 7
+		hashType: blake2b.New(),
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+			[]byte("Baz"),
+			[]byte("Qux"),
+			[]byte("Quux"),
+			[]byte("Quuz"),
+			[]byte("FooBar"),
+			[]byte("FooBaz"),
+			[]byte("BarBaz"),
+		},
+		root: _byteArray("e15d86728d4a31c5880bc0d2d184637bb6672a72313af378141ea789f4b3929a"),
+		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->16;16 [label=\"7b50…c81f\"];16->8;\"Bar\" [shape=oval];\"Bar\"->17;17 [label=\"03c7…6406\"];16->17 [style=invisible arrowhead=none];17->8;\"Baz\" [shape=oval];\"Baz\"->18;18 [label=\"6d5f…2ae0\"];17->18 [style=invisible arrowhead=none];18->9;\"Qux\" [shape=oval];\"Qux\"->19;19 [label=\"d5d1…3cda\"];18->19 [style=invisible arrowhead=none];19->9;\"Quux\" [shape=oval];\"Quux\"->20;20 [label=\"2fec…1151\"];19->20 [style=invisible arrowhead=none];20->10;\"Quuz\" [shape=oval];\"Quuz\"->21;21 [label=\"aff2…62e5\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBar\" [shape=oval];\"FooBar\"->22;22 [label=\"b1ae…72fc\"];21->22 [style=invisible arrowhead=none];22->11;\"FooBaz\" [shape=oval];\"FooBaz\"->23;23 [label=\"32d2…828e\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval];\"BarBaz\"->24;24 [label=\"8173…a835\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"0e57…e3a8\"];15->7;14 [label=\"0e57…e3a8\"];14->7;13 [label=\"0e57…e3a8\"];13->6;12 [label=\"cff7…4135\"];12->6;11 [label=\"b12a…1342\"];11->5;10 [label=\"3705…4377\"];10->5;9 [label=\"f277…7fd5\"];9->4;8 [label=\"e9e0…f637\"];8->4;7 [label=\"8438…6412\"];7->3;6 [label=\"7578…713e\"];6->3;5 [label=\"2845…c279\"];5->2;4 [label=\"7799…9592\"];4->2;3 [label=\"84d1…1df2\"];3->1;2 [label=\"0d1f…d49e\"];2->1;1 [label=\"e15d…929a\"];}",
 	},
 }
 
-func TestTreeNew(t *testing.T) {
+func TestNew(t *testing.T) {
 	for i, test := range tests {
 		tree, err := NewUsing(test.data, test.hashType)
 		if test.createErr != nil {
 			assert.Equal(t, test.createErr, err, fmt.Sprintf("expected error at test %d", i))
 		} else {
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, test.rootHash, tree.RootHash(), fmt.Sprintf("unexpected root at test %d", i))
+			fmt.Sprintf("%v", tree)
+			assert.Equal(t, test.root, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
 		}
 	}
 }
 
-func TestTreeNewFromRaw(t *testing.T) {
-	for i, test := range tests {
-		rawData := _dataToRaw(test.data)
-		tree, err := NewFromRawUsing(rawData, test.hashType)
-		if test.createErr != nil {
-			assert.Equal(t, test.createErr, err, fmt.Sprintf("expected error at test %d", i))
-		} else {
-			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, test.rootHash, tree.RootHash(), fmt.Sprintf("unexpected root at test %d", i))
-		}
-	}
-}
-
-func TestTreeFind(t *testing.T) {
-	for i, test := range tests {
-		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
-			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			for j, data := range test.data {
-				found, err := tree.ContainsData(data)
-				assert.Nil(t, err, fmt.Sprintf("failed to check for data at test %d", i))
-				assert.True(t, found, fmt.Sprintf("failed to find data at test %d data %d", i, j))
-			}
-		}
-	}
-}
-
-func TestTreeProof(t *testing.T) {
+func TestProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
 			tree, err := NewUsing(test.data, test.hashType)
@@ -209,7 +140,7 @@ func TestTreeProof(t *testing.T) {
 			for j, data := range test.data {
 				proof, err := tree.GenerateProof(data)
 				assert.Nil(t, err, fmt.Sprintf("failed to create proof at test %d data %d", i, j))
-				proven, err := VerifyProofUsing(data, proof, tree.RootHash(), test.hashType)
+				proven, err := VerifyProofUsing(data, proof, tree.Root(), test.hashType)
 				assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
 				assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d data %d", i, j))
 			}
@@ -217,32 +148,30 @@ func TestTreeProof(t *testing.T) {
 	}
 }
 
-func TestTreeMissingData(t *testing.T) {
-	missingData := &testData{
-		data: "missing",
-	}
-	for i, test := range tests {
-		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
-			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			found, err := tree.ContainsData(missingData)
-			assert.Nil(t, err, fmt.Sprintf("failed to check for data at test %d", i))
-			assert.False(t, found, fmt.Sprintf("found non-existant data at test %d", i))
-		}
-	}
-
-}
-
-func TestTreeMissingProof(t *testing.T) {
-	missingData := &testData{
-		data: "missing",
-	}
+//func TestMissingData(t *testing.T) {
+//	missingData := &testData{
+//		data: "missing",
+//	}
+//	for i, test := range tests {
+//		if test.createErr == nil {
+//			tree, err := NewUsing(test.data, test.hashType)
+//			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+//			found, err := tree.ContainsData(missingData)
+//			assert.Nil(t, err, fmt.Sprintf("failed to check for data at test %d", i))
+//			assert.False(t, found, fmt.Sprintf("found non-existant data at test %d", i))
+//		}
+//	}
+//
+//}
+//
+func TestMissingProof(t *testing.T) {
+	missingData := []byte("missing")
 	for i, test := range tests {
 		if test.createErr == nil {
 			tree, err := NewUsing(test.data, test.hashType)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateProof(missingData)
-			assert.Equal(t, err, errors.New("merkle tree does not contain this data"))
+			assert.Equal(t, err, errors.New("data not found"))
 		}
 	}
 
@@ -259,37 +188,44 @@ func _randomString(n int) string {
 	return string(res)
 }
 
-func TestTreeProofRandom(t *testing.T) {
-	data := make([]NodeData, 0)
+func TestProofRandom(t *testing.T) {
+	data := make([][]byte, 1000)
 	for i := 0; i < 1000; i++ {
-		data = append(data, &testData{data: _randomString(6)})
+		data[i] = []byte(_randomString(6))
 	}
-	tree, err := NewUsing(data, blake2b.New())
+	tree, err := New(data)
 	assert.Nil(t, err, "failed to create tree")
 	for i := range data {
 		proof, err := tree.GenerateProof(data[i])
 		assert.Nil(t, err, fmt.Sprintf("failed to create proof at data %d", i))
-		proven, err := VerifyProof(data[i], proof, tree.RootHash())
+		proven, err := VerifyProof(data[i], proof, tree.Root())
 		assert.True(t, proven, fmt.Sprintf("failed to verify proof at data %d", i))
 	}
 }
 
-func TestTreeString(t *testing.T) {
+func TestString(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
 			tree, err := NewUsing(test.data, test.hashType)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, fmt.Sprintf("%x", test.rootHash), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
+			assert.Equal(t, fmt.Sprintf("%x", test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
 		}
 	}
 }
 
-func TestTreeDOT(t *testing.T) {
+func TestDOT(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
 			tree, err := NewUsing(test.data, test.hashType)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, test.dot, tree.DOT(), fmt.Sprintf("incorrect DOT representation at test %d", i))
+			assert.Equal(t, test.dot, tree.DOT(new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
 		}
 	}
+}
+
+func TestFormatter(t *testing.T) {
+	tree, err := New(tests[5].data)
+	assert.Nil(t, err, "failed to create tree")
+	assert.Equal(t, "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"466f…6f6f\" [shape=oval];\"466f…6f6f\"->4;4 [label=\"7b50…c81f\"];4->2;\"4261…6172\" [shape=oval];\"4261…6172\"->5;5 [label=\"03c7…6406\"];4->5 [style=invisible arrowhead=none];5->2;\"4261…617a\" [shape=oval];\"4261…617a\"->6;6 [label=\"6d5f…2ae0\"];5->6 [style=invisible arrowhead=none];6->3;7 [label=\"0000…0000\"];6->7 [style=invisible arrowhead=none];7->3;{rank=same;4;5;6;7};3 [label=\"13c7…a929\"];3->1;2 [label=\"e9e0…f637\"];2->1;1 [label=\"635c…889c\"];}", tree.DOT(nil, nil), "incorrect default representation")
+	assert.Equal(t, "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"466f6f\" [shape=oval];\"466f6f\"->4;4 [label=\"7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f\"];4->2;\"426172\" [shape=oval];\"426172\"->5;5 [label=\"03c70c07424c7d85174bf8e0dbd4600a4bd21c00ce34dea7ab57c83c398e6406\"];4->5 [style=invisible arrowhead=none];5->2;\"42617a\" [shape=oval];\"42617a\"->6;6 [label=\"6d5fd2391f8abb79469edf404fd1751a74056ce54ee438c128bba9e680242ae0\"];5->6 [style=invisible arrowhead=none];6->3;7 [label=\"0000000000000000000000000000000000000000000000000000000000000000\"];6->7 [style=invisible arrowhead=none];7->3;{rank=same;4;5;6;7};3 [label=\"13c75aad6074ad17d7014b1ee42012c840e90a79eb8e1694e3b107ca6ae8a929\"];3->1;2 [label=\"e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637\"];2->1;1 [label=\"635ca493fe20a7b8485d2e4c650e33444664b4ce0773c36d2a9da79176f6889c\"];}", tree.DOT(new(HexFormatter), new(HexFormatter)), "incorrect default representation")
 }

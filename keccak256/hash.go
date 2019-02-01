@@ -14,8 +14,6 @@
 package keccak256
 
 import (
-	"errors"
-
 	"golang.org/x/crypto/sha3"
 )
 
@@ -28,11 +26,8 @@ func New() *Keccak256 {
 }
 
 // Hash generates a Keccak-256 hash from a byte array
-func (h *Keccak256) Hash(data []byte) ([]byte, error) {
-	if len(data) == 0 {
-		return nil, errors.New("no data supplied")
-	}
+func (h *Keccak256) Hash(data []byte) []byte {
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write(data)
-	return hash.Sum(nil), nil
+	return hash.Sum(nil)
 }

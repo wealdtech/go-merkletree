@@ -15,7 +15,6 @@ package keccak256
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -32,25 +31,16 @@ func TestHash(t *testing.T) {
 	var tests = []struct {
 		data   []byte
 		output []byte
-		err    error
 	}{
 		{
 			data:   _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
 			output: _byteArray("757e4fdf5d9888395b8ea2bcf88321e4b40fb0d8e2545f92ede85a14d668a125"),
 		},
-		{
-			err: errors.New("no data supplied"),
-		},
 	}
 
 	hash := New()
 	for i, test := range tests {
-		output, err := hash.Hash(test.data)
-		if test.err != nil {
-			assert.Equal(t, test.err, err, fmt.Sprintf("failed at test %d", i))
-		} else {
-			assert.Nil(t, err, fmt.Sprintf("unexpected error at test %d", i))
-			assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
-		}
+		output := hash.Hash(test.data)
+		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
 	}
 }
