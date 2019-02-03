@@ -42,6 +42,10 @@ var tests = []struct {
 	root []byte
 	// DOT representation of tree
 	dot string
+	// salt to use
+	salt []byte
+	// saltedRoot hash after the tree has been created with the salt
+	saltedRoot []byte
 }{
 	{ // 0
 		hashType:  blake2b.New(),
@@ -58,8 +62,10 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root: _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
-		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"7b50…c81f\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"03c7…6406\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e9e0…f637\"];}",
+		root:       _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
+		dot:        "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"7b50…c81f\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"03c7…6406\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e9e0…f637\"];}",
+		salt:       []byte("salt"),
+		saltedRoot: _byteArray("420ba02ad7ce2077a2f82f4ac3752eeaf1285779a210391e9378337af0ed3539"),
 	},
 	{ // 3
 		hashType: keccak256.New(),
@@ -67,8 +73,10 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root: _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
-		dot:  "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"b608…16b7\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"c162…985f\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"fb6c…aeed\"];}",
+		root:       _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
+		dot:        "digraph MerkleTree {rankdir = BT;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2;2 [label=\"b608…16b7\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3;3 [label=\"c162…985f\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"fb6c…aeed\"];}",
+		salt:       []byte("salt"),
+		saltedRoot: _byteArray("5d3112070164037e104b3cc42ef5242e35616fdc6d2b34e3605154a3e5f9d594"),
 	},
 	{ // 4
 		hashType: blake2b.New(),
@@ -121,12 +129,11 @@ var tests = []struct {
 
 func TestNew(t *testing.T) {
 	for i, test := range tests {
-		tree, err := NewUsing(test.data, test.hashType)
+		tree, err := NewUsing(test.data, test.hashType, nil)
 		if test.createErr != nil {
 			assert.Equal(t, test.createErr, err, fmt.Sprintf("expected error at test %d", i))
 		} else {
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			fmt.Sprintf("%v", tree)
 			assert.Equal(t, test.root, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
 		}
 	}
@@ -135,12 +142,29 @@ func TestNew(t *testing.T) {
 func TestProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
+			tree, err := NewUsing(test.data, test.hashType, nil)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j, data := range test.data {
 				proof, err := tree.GenerateProof(data)
 				assert.Nil(t, err, fmt.Sprintf("failed to create proof at test %d data %d", i, j))
-				proven, err := VerifyProofUsing(data, proof, tree.Root(), test.hashType)
+				proven, err := VerifyProofUsing(data, proof, tree.Root(), test.hashType, nil)
+				assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
+				assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d data %d", i, j))
+			}
+		}
+	}
+}
+
+func TestSaltedProof(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil && test.salt != nil {
+			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, test.saltedRoot, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
+			for j, data := range test.data {
+				proof, err := tree.GenerateProof(data)
+				assert.Nil(t, err, fmt.Sprintf("failed to create proof at test %d data %d", i, j))
+				proven, err := VerifyProofUsing(data, proof, tree.Root(), test.hashType, test.salt)
 				assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
 				assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d data %d", i, j))
 			}
@@ -152,7 +176,7 @@ func TestMissingProof(t *testing.T) {
 	missingData := []byte("missing")
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
+			tree, err := NewUsing(test.data, test.hashType, nil)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateProof(missingData)
 			assert.Equal(t, err, errors.New("data not found"))
@@ -190,7 +214,7 @@ func TestProofRandom(t *testing.T) {
 func TestString(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
+			tree, err := NewUsing(test.data, test.hashType, nil)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, fmt.Sprintf("%x", test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
 		}
@@ -200,7 +224,7 @@ func TestString(t *testing.T) {
 func TestDOT(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType)
+			tree, err := NewUsing(test.data, test.hashType, nil)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOT(new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
 		}

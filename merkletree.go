@@ -39,6 +39,8 @@ import (
 
 // MerkleTree is the top-level structure for the merkle tree.
 type MerkleTree struct {
+	// salt is the optional salt hashed with data to avoid rainbow attacks
+	salt []byte
 	// hash is a pointer to the hashing struct
 	hash HashFunc
 	// data is the data from which the Merkle tree is created
@@ -135,12 +137,12 @@ func (t *MerkleTree) GenerateProof(data []byte) (*Proof, error) {
 // New creates a new Merkle tree using the provided raw data and default hash type.
 // data must contain at least one element for it to be valid.
 func New(data [][]byte) (*MerkleTree, error) {
-	return NewUsing(data, blake2b.New())
+	return NewUsing(data, blake2b.New(), nil)
 }
 
 // NewUsing creates a new Merkle tree using the provided raw data and supplied hash type.
 // data must contain at least one element for it to be valid.
-func NewUsing(data [][]byte, hash HashType) (*MerkleTree, error) {
+func NewUsing(data [][]byte, hash HashType, salt []byte) (*MerkleTree, error) {
 	if len(data) == 0 {
 		return nil, errors.New("tree must have at least 1 piece of data")
 	}
@@ -151,7 +153,11 @@ func NewUsing(data [][]byte, hash HashType) (*MerkleTree, error) {
 	nodes := make([][]byte, branchesLen+len(data)+(branchesLen-len(data)))
 	// Leaves
 	for i := range data {
-		nodes[i+branchesLen] = hash.Hash(data[i])
+		if salt == nil {
+			nodes[i+branchesLen] = hash.Hash(data[i])
+		} else {
+			nodes[i+branchesLen] = hash.Hash(append(data[i], salt...))
+		}
 	}
 	// Branches
 	for i := branchesLen - 1; i > 0; i-- {
@@ -159,6 +165,7 @@ func NewUsing(data [][]byte, hash HashType) (*MerkleTree, error) {
 	}
 
 	tree := &MerkleTree{
+		salt:  salt,
 		hash:  hash.Hash,
 		nodes: nodes,
 		data:  data,

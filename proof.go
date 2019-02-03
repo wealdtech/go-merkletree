@@ -40,7 +40,7 @@ func newProof(hashes [][]byte, index uint64) *Proof {
 //
 // This returns true if the proof is verified, otherwise false.
 func VerifyProof(data []byte, proof *Proof, root []byte) (bool, error) {
-	return VerifyProofUsing(data, proof, root, blake2b.New())
+	return VerifyProofUsing(data, proof, root, blake2b.New(), nil)
 }
 
 // VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
@@ -49,8 +49,13 @@ func VerifyProof(data []byte, proof *Proof, root []byte) (bool, error) {
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProofUsing(data []byte, proof *Proof, root []byte, hashType HashType) (bool, error) {
-	dataHash := hashType.Hash(data)
+func VerifyProofUsing(data []byte, proof *Proof, root []byte, hashType HashType, salt []byte) (bool, error) {
+	var dataHash []byte
+	if salt == nil {
+		dataHash = hashType.Hash(data)
+	} else {
+		dataHash = hashType.Hash(append(data, salt...))
+	}
 	index := proof.Index + (1 << uint(len(proof.Hashes)))
 	//	if index >= uint64(len(proof.Hashes)) {
 	//		return false, errors.New("invalid proof")
