@@ -15,6 +15,7 @@ package merkletree
 
 import (
 	"bytes"
+	"encoding/binary"
 
 	"github.com/wealdtech/go-merkletree/blake2b"
 )
@@ -39,35 +40,64 @@ func newProof(hashes [][]byte, index uint64) *Proof {
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProof(data []byte, proof *Proof, root []byte) (bool, error) {
-	return VerifyProofUsing(data, proof, root, blake2b.New(), nil)
+func VerifyProof(data []byte, salt bool, proof *Proof, pollard [][]byte) (bool, error) {
+	return VerifyProofUsing(data, salt, proof, pollard, blake2b.New())
 }
 
+//// VerifyProofWithPollard verifies a Merkle tree proof for a piece of data using the default hash type.
+//// The proof and path are as per Merkle tree's GenerateProofWithPollard(), and pollard is a pollard of the tree against which the
+//// proof is to be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for
+//// checking against historical trees without having to instantiate them.
+////
+//// This returns true if the proof is verified, otherwise false.
+//func VerifyProofWithPollard(data []byte, salt bool, proof *Proof, pollard [][]byte) (bool, error) {
+//	return VerifyProofWithPollardUsing(data, salt, proof, pollard, blake2b.New())
+//}
+
+//// VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
+//// The proof and path are as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
+//// be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for checking
+//// against historical trees without having to instantiate them.
+////
+//// This returns true if the proof is verified, otherwise false.
+//func VerifyProofUsing(data []byte, salt bool, proof *Proof, root []byte, hashType HashType) (bool, error) {
+//	return bytes.Equal(generateProofHash(data, salt, proof, hashType), root), nil
+//}
+
 // VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
-// The proof and path are as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
+// The proof and is as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
 // be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for checking
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProofUsing(data []byte, proof *Proof, root []byte, hashType HashType, salt []byte) (bool, error) {
-	var dataHash []byte
-	if salt == nil {
-		dataHash = hashType.Hash(data)
+func VerifyProofUsing(data []byte, salt bool, proof *Proof, pollard [][]byte, hashType HashType) (bool, error) {
+	proofHash := generateProofHash(data, salt, proof, hashType)
+	for i := 0; i < len(pollard)/2+1; i++ {
+		if bytes.Equal(pollard[len(pollard)-1-i], proofHash) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func generateProofHash(data []byte, salt bool, proof *Proof, hashType HashType) []byte {
+	var proofHash []byte
+	if salt {
+		indexSalt := make([]byte, 4)
+		binary.BigEndian.PutUint32(indexSalt, uint32(proof.Index))
+		proofHash = hashType.Hash(data, indexSalt)
 	} else {
-		dataHash = hashType.Hash(append(data, salt...))
+		proofHash = hashType.Hash(data)
 	}
 	index := proof.Index + (1 << uint(len(proof.Hashes)))
-	//	if index >= uint64(len(proof.Hashes)) {
-	//		return false, errors.New("invalid proof")
-	//	}
 
 	for _, hash := range proof.Hashes {
 		if index%2 == 0 {
-			dataHash = hashType.Hash(append(dataHash, hash...))
+			proofHash = hashType.Hash(proofHash, hash)
 		} else {
-			dataHash = hashType.Hash(append(hash, dataHash...))
+			proofHash = hashType.Hash(hash, proofHash)
 		}
 		index = index >> 1
 	}
-	return bytes.Equal(dataHash, root), nil
+	return proofHash
 }
