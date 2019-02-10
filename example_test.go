@@ -14,6 +14,8 @@
 package merkletree_test
 
 import (
+	"fmt"
+
 	merkletree "github.com/wealdtech/go-merkletree"
 )
 
@@ -50,4 +52,48 @@ func ExampleMerkleTree() {
 	if !verified {
 		panic("failed to verify proof for Baz")
 	}
+
+	fmt.Printf("%x\n", root)
+	// Output: 2c95331b1a38dba3600391a3e864f9418a271388936e54edecd916824bb54203
+}
+
+// Example using a Merkle pollard rather than a simple root.
+func ExampleMerklePollard() {
+	// Data for the tree
+	data := [][]byte{
+		[]byte("Foo"),
+		[]byte("Bar"),
+		[]byte("Baz"),
+		[]byte("Qux"),
+		[]byte("Quux"),
+		[]byte("Quuz"),
+	}
+
+	// Create the tree
+	tree, err := merkletree.New(data)
+	if err != nil {
+		panic(err)
+	}
+
+	// Fetch the root and first level of branches as a pollard
+	pollard := tree.Pollard(1)
+
+	baz := data[2]
+	// Generate a proof for 'Baz' up to (but not including) the first level of branches
+	proof, err := tree.GenerateProof(baz, 1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Verify the proof for 'Baz'
+	verified, err := merkletree.VerifyProof(baz, false, proof, pollard)
+	if err != nil {
+		panic(err)
+	}
+	if !verified {
+		panic("failed to verify proof for Baz")
+	}
+
+	fmt.Printf("%x\n", pollard)
+	// Output: [9db41fa50e69f2d9ce73367bf8fd249fa960f6a416352f473693ea79540e516d 7799922ba259c0529cdfb9f974024d45abef9b3190850bc23fc5145cf81c9592 50824d0d95f73e4228e54705834c6fdaaa7fb22e1b8934a9100cc772f2d1d5f0]
 }
