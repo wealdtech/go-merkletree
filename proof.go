@@ -44,26 +44,6 @@ func VerifyProof(data []byte, salt bool, proof *Proof, pollard [][]byte) (bool, 
 	return VerifyProofUsing(data, salt, proof, pollard, blake2b.New())
 }
 
-//// VerifyProofWithPollard verifies a Merkle tree proof for a piece of data using the default hash type.
-//// The proof and path are as per Merkle tree's GenerateProofWithPollard(), and pollard is a pollard of the tree against which the
-//// proof is to be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for
-//// checking against historical trees without having to instantiate them.
-////
-//// This returns true if the proof is verified, otherwise false.
-//func VerifyProofWithPollard(data []byte, salt bool, proof *Proof, pollard [][]byte) (bool, error) {
-//	return VerifyProofWithPollardUsing(data, salt, proof, pollard, blake2b.New())
-//}
-
-//// VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
-//// The proof and path are as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
-//// be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for checking
-//// against historical trees without having to instantiate them.
-////
-//// This returns true if the proof is verified, otherwise false.
-//func VerifyProofUsing(data []byte, salt bool, proof *Proof, root []byte, hashType HashType) (bool, error) {
-//	return bytes.Equal(generateProofHash(data, salt, proof, hashType), root), nil
-//}
-
 // VerifyProofUsing verifies a Merkle tree proof for a piece of data using the provided hash type.
 // The proof and is as per Merkle tree's GenerateProof(), and root is the root hash of the tree against which the proof is to
 // be verified.  Note that this does not require the Merkle tree to verify the proof, only its root; this allows for checking
