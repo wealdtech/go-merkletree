@@ -45,7 +45,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/wealdtech/go-merkletree/blake2b"
 )
@@ -62,77 +61,17 @@ type MerkleTree struct {
 	nodes [][]byte
 }
 
-// DOT creates a DOT representation of the tree.  It is generally used for external presentation.
-// This takes two optional formatters for []byte data: the first for leaf data and the second for branches.
-func (t *MerkleTree) DOT(lf Formatter, bf Formatter) string {
-	if lf == nil {
-		lf = new(TruncatedHexFormatter)
-	}
-	if bf == nil {
-		bf = new(TruncatedHexFormatter)
-	}
-
-	var builder strings.Builder
-	builder.WriteString("digraph MerkleTree {")
-	builder.WriteString("rankdir = TB;")
-	builder.WriteString("node [shape=rectangle margin=\"0.2,0.2\"];")
-	empty := make([]byte, len(t.nodes[1]))
-	dataLen := len(t.data)
-	valuesOffset := len(t.nodes) / 2
-	var nodeBuilder strings.Builder
-	nodeBuilder.WriteString("{rank=same")
-	indexSalt := make([]byte, 4)
-	for i := 0; i < valuesOffset; i++ {
-		if i < dataLen {
-			// Real data
-			builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval];", lf.Format(t.data[i])))
-			if t.salt {
-				binary.BigEndian.PutUint32(indexSalt, uint32(i))
-				builder.WriteString(fmt.Sprintf("\"%s\"->%d [label=\"+%0x\"];", lf.Format(t.data[i]), valuesOffset+i, indexSalt))
-			} else {
-				builder.WriteString(fmt.Sprintf("\"%s\"->%d;", lf.Format(t.data[i]), valuesOffset+i))
-			}
-			nodeBuilder.WriteString(fmt.Sprintf(";%d", valuesOffset+i))
-			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"];", valuesOffset+i, bf.Format(t.nodes[valuesOffset+i])))
-			if i > 0 {
-				builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", valuesOffset+i-1, valuesOffset+i))
-			}
-		} else {
-			// Empty leaf
-			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"];", valuesOffset+i, bf.Format(empty)))
-			builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", valuesOffset+i-1, valuesOffset+i))
-			nodeBuilder.WriteString(fmt.Sprintf(";%d", valuesOffset+i))
-		}
-		if dataLen > 1 {
-			builder.WriteString(fmt.Sprintf("%d->%d;", valuesOffset+i, (valuesOffset+i)/2))
-		}
-	}
-	nodeBuilder.WriteString("};")
-	builder.WriteString(nodeBuilder.String())
-
-	// Add branches
-	for i := valuesOffset - 1; i > 0; i-- {
-		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"];", i, bf.Format(t.nodes[i])))
-		if i > 1 {
-			builder.WriteString(fmt.Sprintf("%d->%d;", i, i/2))
-		}
-	}
-	builder.WriteString("}")
-	return builder.String()
-}
-
 func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
 	for i, data := range t.data {
 		if bytes.Compare(data, input) == 0 {
 			return uint64(i), nil
 		}
-
 	}
 	return 0, errors.New("data not found")
 }
 
 // GenerateProof generates the proof for a piece of data.
-// Height is the height of the pollard to verify he proof.  If using the Merkle root to verify this should be 0.
+// Height is the height of the pollard to verify the proof.  If using the Merkle root to verify this should be 0.
 // If the data is not present in the tree this will return an error.
 // If the data is present in the tree this will return the hashes for each level in the tree and the index of the value in the tree
 func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
