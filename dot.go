@@ -79,10 +79,28 @@ func (t *MerkleTree) DOTProof(proof *Proof, lf Formatter, bf Formatter) string {
 		}
 	}
 
-	//	fmt.Printf("Proof is %v\n", proof)
-	//	fmt.Printf("Root indices are %v\n", rootIndices)
-	//	fmt.Printf("Value indices are %v\n", valueIndices)
-	//	fmt.Printf("Proof indices are %v\n", proofIndices)
+	return t.dot(rootIndices, valueIndices, proofIndices, lf, bf)
+}
+
+// DOTMultiProof creates a DOT representation of the tree with highlights for a multiproof.  It is generally used for external
+// presentation.  This takes two optional formatters for []byte data: the first for leaf data and the second for branches.
+func (t *MerkleTree) DOTMultiProof(multiProof *MultiProof, lf Formatter, bf Formatter) string {
+	if multiProof == nil {
+		return t.DOT(lf, bf)
+	}
+
+	// Find out which nodes are used in our multiproof
+	valueIndices := make(map[uint64]int)
+	proofIndices := make(map[uint64]int)
+	rootIndices := make(map[uint64]int)
+
+	for _, index := range multiProof.Indices {
+		valueIndices[index] = 1
+	}
+	for index := range multiProof.Hashes {
+		proofIndices[index] = 1
+	}
+	rootIndices[1] = 1
 	return t.dot(rootIndices, valueIndices, proofIndices, lf, bf)
 }
 
@@ -109,7 +127,7 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			// Value
 			builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval", lf.Format(t.data[i])))
 			if valueIndices[uint64(i)] > 0 {
-				builder.WriteString(fmt.Sprintf(" color=yellow style=filled fillcolor=yellow"))
+				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#ff4040\""))
 			}
 			builder.WriteString("];")
 
@@ -124,9 +142,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			nodeBuilder.WriteString(fmt.Sprintf(";%d", valuesOffset+i))
 			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(t.nodes[valuesOffset+i])))
 			if proofIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" color=green style=filled fillcolor=green"))
+				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
 			} else if rootIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" color=lightblue style=filled fillcolor=lightblue"))
+				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
 			}
 			builder.WriteString("];")
 			if i > 0 {
@@ -136,9 +154,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			// Empty leaf
 			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(empty)))
 			if proofIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" color=green style=filled fillcolor=green"))
+				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
 			} else if rootIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" color=lightblue style=filled fillcolor=lightblue"))
+				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
 			}
 			builder.WriteString("];")
 			builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", valuesOffset+i-1, valuesOffset+i))
@@ -155,9 +173,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	for i := valuesOffset - 1; i > 0; i-- {
 		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", i, bf.Format(t.nodes[i])))
 		if rootIndices[uint64(i)] > 0 {
-			builder.WriteString(fmt.Sprintf(" color=lightblue style=filled fillcolor=lightblue"))
+			builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
 		} else if proofIndices[uint64(i)] > 0 {
-			builder.WriteString(fmt.Sprintf(" color=green style=filled fillcolor=green"))
+			builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
 		}
 		builder.WriteString("];")
 		if i > 1 {

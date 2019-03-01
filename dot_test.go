@@ -49,6 +49,19 @@ func TestDOTProof(t *testing.T) {
 	}
 }
 
+func TestDOTMultiProof(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil && test.multiProofDot != "" {
+			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, test.dot, tree.DOTMultiProof(nil, new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
+			proof, err := tree.GenerateMultiProof(test.data)
+			assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d", i))
+			assert.Equal(t, test.multiProofDot, tree.DOTMultiProof(proof, new(StringFormatter), nil), fmt.Sprintf("incorrect multiproof DOT representation at test %d", i))
+		}
+	}
+}
+
 func TestFormatter(t *testing.T) {
 	tree, err := New(tests[5].data)
 	assert.Nil(t, err, "failed to create tree")

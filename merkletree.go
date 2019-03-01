@@ -93,6 +93,45 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 	return newProof(hashes, index), nil
 }
 
+// GenerateMultiProof generates the proof for multiple pieces of data.
+func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
+	hashes := make([][][]byte, len(data))
+	indices := make([]uint64, len(data))
+
+	// Step 1: generate individual proofs
+	for i := range data {
+		tmpProof, err := t.GenerateProof(data[i], 0)
+		if err != nil {
+			return nil, err
+		}
+		hashes[i] = tmpProof.Hashes
+		indices[i] = tmpProof.Index
+	}
+
+	// Step 2: combine the hashes across all proofs and highlight all calculated indices
+	proofHashes := make(map[uint64][]byte)
+	calculatedIndices := make([]bool, len(t.nodes))
+	for i, index := range indices {
+		hashNum := 0
+		for j := uint64(index + uint64(math.Ceil(float64(len(t.nodes))/2))); j > 1; j /= 2 {
+			proofHashes[j^1] = hashes[i][hashNum]
+			calculatedIndices[j] = true
+			hashNum++
+		}
+	}
+
+	// Step 3: remove any hashes that can be calculated
+	for _, index := range indices {
+		for j := uint64(index + uint64(math.Ceil(float64(len(t.nodes))/2))); j > 1; j /= 2 {
+			if calculatedIndices[j^1] {
+				delete(proofHashes, j^1)
+			}
+		}
+	}
+
+	return newMultiProof(proofHashes, indices, uint64(len(t.nodes)/2)), nil
+}
+
 // New creates a new Merkle tree using the provided raw data and default hash type.  Salting is not used.
 // data must contain at least one element for it to be valid.
 func New(data [][]byte) (*MerkleTree, error) {

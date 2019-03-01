@@ -29,13 +29,13 @@ go get github.com/wealdtech/go-merkletree
 
 `go-merkletree` generates Merkle trees from an array of `[]byte` values and uses them to generate proofs.  Proofs can be verified, and graphs generated
 
-This package uses pollards for efficient generation of multiple proofs against the same tree; see the article [Understanding Merkle pollards](https://medium.com/@jgm.orinoco/understanding-merkle-pollards-1547fc7efaa) for details.
+This package uses pollards and sparese multiproofs for efficient generation of multiple proofs against the same tree; see the articles [Understanding Merkle pollards](https://medium.com/@jgm.orinoco/understanding-merkle-pollards-1547fc7efaa) and [Understanding sparse Merkle multiproofs](https://medium.com/@jgm.orinoco/understanding-sparse-merkle-multiproofs-9b9f049e8f08) for details.
 
 This package can generate visualisations (in [DOT](https://graphviz.gitlab.io/_pages/doc/info/lang.html) format) for trees and proofs.  Below is a tree visualisation:
 
 ![Merkle tree](images/tree.svg)
 
-and below is a proof visualisation with the value being proved in yellow, the intermediate branches in green and the root in blue:
+and below is a proof visualisation with the value being proved in red, the intermediate branches in green and the root in blue:
 
 ![Merkle proof](images/proof.svg)
 
