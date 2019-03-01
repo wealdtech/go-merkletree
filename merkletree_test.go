@@ -262,7 +262,7 @@ func TestNew(t *testing.T) {
 	for i, test := range tests {
 		tree, err := NewUsing(test.data, test.hashType, false)
 		if test.createErr != nil {
-			assert.Equal(t, test.createErr, err, fmt.Sprintf("expected error at test %d", i))
+			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
 		} else {
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.root, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
