@@ -14,7 +14,6 @@
 package merkletree
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -83,7 +82,7 @@ func TestMissingProof(t *testing.T) {
 			tree, err := NewUsing(test.data, test.hashType, false)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateProof(missingData, 0)
-			assert.Equal(t, err, errors.New("data not found"))
+			assert.Equal(t, err.Error(), "data not found")
 		}
 	}
 }

@@ -15,7 +15,6 @@ package merkletree
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -55,7 +54,7 @@ func TestMissingMultiProof(t *testing.T) {
 			tree, err := NewUsing(test.data, test.hashType, false)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateMultiProof(missingData)
-			assert.Equal(t, err, errors.New("data not found"))
+			assert.Equal(t, err.Error(), "data not found")
 		}
 	}
 }
