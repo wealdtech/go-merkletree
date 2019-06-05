@@ -101,9 +101,10 @@ func TestMultiProofRandom(t *testing.T) {
 			proofData[j] = data[indices[j]]
 		}
 		multiProof, err := tree.GenerateMultiProof(proofData)
-		assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d", i))
+		assert.Nil(t, err, fmt.Sprintf("error creating multiproof at test %d", i))
 
 		proven, err := VerifyMultiProof(proofData, false, multiProof, tree.Root())
+		assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
 		assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
 	}
 }

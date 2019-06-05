@@ -126,6 +126,7 @@ func TestProofRandom(t *testing.T) {
 		proof, err := tree.GenerateProof(data[i], 0)
 		assert.Nil(t, err, fmt.Sprintf("failed to create proof at data %d", i))
 		proven, err := VerifyProof(data[i], false, proof, [][]byte{tree.Root()})
-		assert.True(t, proven, fmt.Sprintf("failed to verify proof at data %d", i))
+		assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
+		assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d", i))
 	}
 }

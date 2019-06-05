@@ -68,7 +68,7 @@ func (t *MerkleTree) DOTProof(proof *Proof, lf Formatter, bf Formatter) string {
 		index := proof.Index + uint64(math.Ceil(float64(len(t.nodes))/2))
 		valueIndices[proof.Index] = 1
 
-		for _ = range proof.Hashes {
+		for range proof.Hashes {
 			proofIndices[index^1] = 1
 			index /= 2
 		}

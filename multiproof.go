@@ -71,14 +71,13 @@ func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []b
 
 	// Step 2 calculate values up the tree
 	for i := proof.Values - 1; i > 0; i-- {
-		hash, exists := proof.Hashes[i]
+		_, exists := proof.Hashes[i]
 		if !exists {
 			child1, exists := proof.Hashes[i*2]
 			if exists {
 				child2, exists := proof.Hashes[i*2+1]
 				if exists {
-					hash = hashType.Hash(child1, child2)
-					proof.Hashes[i] = hash
+					proof.Hashes[i] = hashType.Hash(child1, child2)
 				}
 			}
 		}

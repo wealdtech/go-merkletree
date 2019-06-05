@@ -25,6 +25,7 @@ type Formatter interface {
 // TruncatedHexFormatter shows only the first and last two bytes of the value
 type TruncatedHexFormatter struct{}
 
+// Format formats a value as truncated hex, showing the first and last four characers of the hex string.
 func (f *TruncatedHexFormatter) Format(data []byte) string {
 	return fmt.Sprintf("%4x…%4x", data[0:2], data[len(data)-2:len(data)])
 }
@@ -32,6 +33,7 @@ func (f *TruncatedHexFormatter) Format(data []byte) string {
 // HexFormatter shows the entire value
 type HexFormatter struct{}
 
+// Format formats a value as a full hex string
 func (f *HexFormatter) Format(data []byte) string {
 	return fmt.Sprintf("%0x", data)
 }
@@ -39,6 +41,7 @@ func (f *HexFormatter) Format(data []byte) string {
 // StringFormatter shows the entire value as a string
 type StringFormatter struct{}
 
+// Format formats a value as a UTF-8 string
 func (f *StringFormatter) Format(data []byte) string {
 	return fmt.Sprintf("%s", string(data))
 }
