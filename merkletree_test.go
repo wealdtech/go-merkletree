@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wealdtech/go-merkletree/blake2b"
 	"github.com/wealdtech/go-merkletree/keccak256"
+	"github.com/wealdtech/go-merkletree/sha3"
 )
 
 // _byteArray is a helper to turn a string in to a byte array
@@ -255,6 +256,28 @@ var tests = []struct {
 				"digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->16 [label=\"+00000000\"];16 [label=\"2434…cfac\"];16->8;\"Bar\" [shape=oval];\"Bar\"->17 [label=\"+00000001\"];17 [label=\"f40e…406d\"];16->17 [style=invisible arrowhead=none];17->8;\"Baz\" [shape=oval];\"Baz\"->18 [label=\"+00000002\"];18 [label=\"7c7c…5a1c\"];17->18 [style=invisible arrowhead=none];18->9;\"Qux\" [shape=oval];\"Qux\"->19 [label=\"+00000003\"];19 [label=\"b718…ea0d\"];18->19 [style=invisible arrowhead=none];19->9;\"Quux\" [shape=oval];\"Quux\"->20 [label=\"+00000004\"];20 [label=\"be71…083a\"];19->20 [style=invisible arrowhead=none];20->10;\"Quuz\" [shape=oval];\"Quuz\"->21 [label=\"+00000005\"];21 [label=\"73a8…bc0f\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBar\" [shape=oval];\"FooBar\"->22 [label=\"+00000006\"];22 [label=\"e8b3…5f20\"];21->22 [style=invisible arrowhead=none];22->11;\"FooBaz\" [shape=oval];\"FooBaz\"->23 [label=\"+00000007\"];23 [label=\"970f…8911\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"BarBaz\"->24 [label=\"+00000008\"];24 [label=\"cb70…bc43\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\" style=filled fillcolor=\"#00ff00\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];15->7;14 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];14->7;13 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];13->6;12 [label=\"e9d0…3bad\" style=filled fillcolor=\"#8080ff\"];12->6;11 [label=\"b3c6…0cd2\" style=filled fillcolor=\"#8080ff\"];11->5;10 [label=\"7473…a3a4\" style=filled fillcolor=\"#8080ff\"];10->5;9 [label=\"6dc5…fd2b\" style=filled fillcolor=\"#8080ff\"];9->4;8 [label=\"8d18…354d\" style=filled fillcolor=\"#8080ff\"];8->4;7 [label=\"85c0…c3b1\" style=filled fillcolor=\"#8080ff\"];7->3;6 [label=\"fb16…ac5b\" style=filled fillcolor=\"#8080ff\"];6->3;5 [label=\"4847…84bf\" style=filled fillcolor=\"#8080ff\"];5->2;4 [label=\"622b…1133\" style=filled fillcolor=\"#8080ff\"];4->2;3 [label=\"ee7e…8174\" style=filled fillcolor=\"#8080ff\"];3->1;2 [label=\"286d…fea8\" style=filled fillcolor=\"#8080ff\"];2->1;1 [label=\"6530…4dbd\" style=filled fillcolor=\"#8080ff\"];}",
 			},
 		},
+	},
+	{ // 8
+		hashType: sha3.New256(),
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+		},
+		root:       _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		dot:        "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"0b34…c7b9\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"5621…a66c\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e637…f3b6\"];}",
+		salt:       true,
+		saltedRoot: _byteArray("e6379b212ee745a62d259ecf0bcccd316d67782a159ded7a88ac788c64b3f3b6"),
+	},
+	{ // 9
+		hashType: sha3.New512(),
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+		},
+		root:       _byteArray("5383482cf75e1cee1608ff4dd4250ca84ee0e5037dd77fd3fd5243e3955cc8570e90cf5c1043a55f2226011166b5829471e369ac4e535fe135357f8b21fb3c6d"),
+		dot:        "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"0b34…c7b9\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"5621…a66c\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e637…f3b6\"];}",
+		salt:       true,
+		saltedRoot: _byteArray("e6379b212ee745a62d259ecf0bcccd316d67782a159ded7a88ac788c64b3f3b6"),
 	},
 }
 
