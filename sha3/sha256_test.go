@@ -11,17 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sha3
+package sha3_test
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/wealdtech/go-merkletree/sha3"
 )
 
+// _byteArray is a helper to turn a string in to a byte array
+func _byteArray(input string) []byte {
+	x, err := hex.DecodeString(input)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
+
 func Test256Hash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data   []byte
 		output []byte
 	}{
@@ -31,7 +42,7 @@ func Test256Hash(t *testing.T) {
 		},
 	}
 
-	hash := New256()
+	hash := sha3.New256()
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
@@ -39,7 +50,7 @@ func Test256Hash(t *testing.T) {
 }
 
 func TestMulti256Hash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data1  []byte
 		data2  []byte
 		data3  []byte
@@ -55,7 +66,7 @@ func TestMulti256Hash(t *testing.T) {
 		},
 	}
 
-	hash := New256()
+	hash := sha3.New256()
 	for i, test := range tests {
 		output := hash.Hash(test.data1, test.data2, test.data3, test.data4)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))

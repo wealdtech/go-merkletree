@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package keccak256
+package keccak256_test
 
 import (
 	"encoding/hex"
@@ -19,16 +19,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
 // _byteArray is a helper to turn a string in to a byte array
 func _byteArray(input string) []byte {
-	x, _ := hex.DecodeString(input)
+	x, err := hex.DecodeString(input)
+	if err != nil {
+		panic(err)
+	}
 	return x
 }
 
 func TestHash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data   []byte
 		output []byte
 	}{
@@ -38,7 +42,7 @@ func TestHash(t *testing.T) {
 		},
 	}
 
-	hash := New()
+	hash := keccak256.New()
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
@@ -46,7 +50,7 @@ func TestHash(t *testing.T) {
 }
 
 func TestMultiHash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data1  []byte
 		data2  []byte
 		data3  []byte
@@ -62,13 +66,9 @@ func TestMultiHash(t *testing.T) {
 		},
 	}
 
-	hash := New()
+	hash := keccak256.New()
 	for i, test := range tests {
 		output := hash.Hash(test.data1, test.data2, test.data3, test.data4)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
 	}
-}
-
-func TestHashLength(t *testing.T) {
-	assert.Equal(t, _hashlength, New().HashLength(), "incorrect hash length reported")
 }

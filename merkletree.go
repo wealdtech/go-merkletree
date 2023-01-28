@@ -63,7 +63,7 @@ type MerkleTree struct {
 
 func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
 	for i, data := range t.data {
-		if bytes.Compare(data, input) == 0 {
+		if bytes.Equal(data, input) {
 			return uint64(i), nil
 		}
 	}
@@ -73,7 +73,7 @@ func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
 // GenerateProof generates the proof for a piece of data.
 // Height is the height of the pollard to verify the proof.  If using the Merkle root to verify this should be 0.
 // If the data is not present in the tree this will return an error.
-// If the data is present in the tree this will return the hashes for each level in the tree and the index of the value in the tree
+// If the data is present in the tree this will return the hashes for each level in the tree and the index of the value in the tree.
 func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 	// Find the index of the data
 	index, err := t.indexOf(data)
@@ -98,7 +98,7 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 	hashes := make([][][]byte, len(data))
 	indices := make([]uint64, len(data))
 
-	// Step 1: generate individual proofs
+	// Step 1: generate individual proofs.
 	for i := range data {
 		tmpProof, err := t.GenerateProof(data[i], 0)
 		if err != nil {
@@ -108,21 +108,21 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 		indices[i] = tmpProof.Index
 	}
 
-	// Step 2: combine the hashes across all proofs and highlight all calculated indices
+	// Step 2: combine the hashes across all proofs and highlight all calculated indices.
 	proofHashes := make(map[uint64][]byte)
 	calculatedIndices := make([]bool, len(t.nodes))
 	for i, index := range indices {
 		hashNum := 0
-		for j := uint64(index + uint64(math.Ceil(float64(len(t.nodes))/2))); j > 1; j /= 2 {
+		for j := index + uint64(math.Ceil(float64(len(t.nodes))/2)); j > 1; j /= 2 {
 			proofHashes[j^1] = hashes[i][hashNum]
 			calculatedIndices[j] = true
 			hashNum++
 		}
 	}
 
-	// Step 3: remove any hashes that can be calculated
+	// Step 3: remove any hashes that can be calculated.
 	for _, index := range indices {
-		for j := uint64(index + uint64(math.Ceil(float64(len(t.nodes))/2))); j > 1; j /= 2 {
+		for j := index + uint64(math.Ceil(float64(len(t.nodes))/2)); j > 1; j /= 2 {
 			if calculatedIndices[j^1] {
 				delete(proofHashes, j^1)
 			}
@@ -147,14 +147,14 @@ func NewUsing(data [][]byte, hash HashType, salt bool) (*MerkleTree, error) {
 
 	branchesLen := int(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
 
-	// We pad our data length up to the power of 2
+	// We pad our data length up to the power of 2.
 	nodes := make([][]byte, branchesLen+len(data)+(branchesLen-len(data)))
-	// Leaves
+	// Leaves.
 	indexSalt := make([]byte, 4)
 	for i := range data {
 		if salt {
 			binary.BigEndian.PutUint32(indexSalt, uint32(i))
-			nodes[i+branchesLen] = hash.Hash(data[i], indexSalt[:])
+			nodes[i+branchesLen] = hash.Hash(data[i], indexSalt)
 		} else {
 			nodes[i+branchesLen] = hash.Hash(data[i])
 		}
@@ -162,7 +162,7 @@ func NewUsing(data [][]byte, hash HashType, salt bool) (*MerkleTree, error) {
 	for i := len(data) + branchesLen; i < len(nodes); i++ {
 		nodes[i] = make([]byte, hash.HashLength())
 	}
-	// Branches
+	// Branches.
 	for i := branchesLen - 1; i > 0; i-- {
 		nodes[i] = hash.Hash(nodes[i*2], nodes[i*2+1])
 	}
@@ -193,7 +193,7 @@ func (t *MerkleTree) Salt() bool {
 	return t.salt
 }
 
-// String implements the stringer interface
+// String implements the stringer interface.
 func (t *MerkleTree) String() string {
 	return fmt.Sprintf("%x", t.nodes[1])
 }

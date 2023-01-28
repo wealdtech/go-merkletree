@@ -11,17 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sha3
+package sha3_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/wealdtech/go-merkletree/sha3"
 )
 
 func Test512Hash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data   []byte
 		output []byte
 	}{
@@ -31,7 +32,7 @@ func Test512Hash(t *testing.T) {
 		},
 	}
 
-	hash := New512()
+	hash := sha3.New512()
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
@@ -39,7 +40,7 @@ func Test512Hash(t *testing.T) {
 }
 
 func TestMulti512Hash(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		data1  []byte
 		data2  []byte
 		data3  []byte
@@ -55,7 +56,7 @@ func TestMulti512Hash(t *testing.T) {
 		},
 	}
 
-	hash := New512()
+	hash := sha3.New512()
 	for i, test := range tests {
 		output := hash.Hash(test.data1, test.data2, test.data3, test.data4)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))

@@ -127,7 +127,7 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			// Value
 			builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval", lf.Format(t.data[i])))
 			if valueIndices[uint64(i)] > 0 {
-				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#ff4040\""))
+				builder.WriteString(" style=filled fillcolor=\"#ff4040\"")
 			}
 			builder.WriteString("];")
 
@@ -142,9 +142,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			nodeBuilder.WriteString(fmt.Sprintf(";%d", valuesOffset+i))
 			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(t.nodes[valuesOffset+i])))
 			if proofIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
+				builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 			} else if rootIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
+				builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 			}
 			builder.WriteString("];")
 			if i > 0 {
@@ -154,9 +154,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			// Empty leaf
 			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(empty)))
 			if proofIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
+				builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 			} else if rootIndices[uint64(i+valuesOffset)] > 0 {
-				builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
+				builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 			}
 			builder.WriteString("];")
 			builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", valuesOffset+i-1, valuesOffset+i))
@@ -173,9 +173,9 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	for i := valuesOffset - 1; i > 0; i-- {
 		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", i, bf.Format(t.nodes[i])))
 		if rootIndices[uint64(i)] > 0 {
-			builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#8080ff\""))
+			builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 		} else if proofIndices[uint64(i)] > 0 {
-			builder.WriteString(fmt.Sprintf(" style=filled fillcolor=\"#00ff00\""))
+			builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 		}
 		builder.WriteString("];")
 		if i > 1 {

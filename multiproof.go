@@ -30,7 +30,7 @@ type MultiProof struct {
 	Indices []uint64
 }
 
-// newMultiProof generates a Merkle proof
+// newMultiProof generates a Merkle proof.
 func newMultiProof(hashes map[uint64][]byte, indices []uint64, values uint64) *MultiProof {
 	return &MultiProof{
 		Values:  values,
@@ -56,7 +56,7 @@ func VerifyMultiProof(data [][]byte, salt bool, proof *MultiProof, root []byte) 
 //
 // This returns true if the proof is verified, otherwise false.
 func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []byte, hashType HashType) (bool, error) {
-	// Step 1 create hashes for all values
+	// Step 1 create hashes for all values.
 	var proofHash []byte
 	indexSalt := make([]byte, 4)
 	for i, index := range proof.Indices {
@@ -69,7 +69,7 @@ func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []b
 		proof.Hashes[index+proof.Values] = proofHash
 	}
 
-	// Step 2 calculate values up the tree
+	// Step 2 calculate values up the tree.
 	for i := proof.Values - 1; i > 0; i-- {
 		_, exists := proof.Hashes[i]
 		if !exists {

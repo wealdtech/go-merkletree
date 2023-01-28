@@ -1,4 +1,4 @@
-// Copyright © 2019 Weald Technology Trading
+// Copyright © 2023 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,16 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package merkletree
+package blake2b
 
-// HashFunc is a hashing function.
-type HashFunc func(...[]byte) []byte
+import (
+	"testing"
 
-// HashType defines the interface that must be supplied by hash functions.
-type HashType interface {
-	// Hash calculates the hash of a given input.
-	Hash(...[]byte) []byte
+	"github.com/stretchr/testify/assert"
+)
 
-	// HashLength provides the length of the hash.
-	HashLength() int
+func TestHashLength(t *testing.T) {
+	assert.Equal(t, _hashlength, New().HashLength(), "incorrect hash length reported")
 }

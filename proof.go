@@ -20,13 +20,13 @@ import (
 	"github.com/wealdtech/go-merkletree/blake2b"
 )
 
-// Proof is a proof of a Merkle tree
+// Proof is a proof of a Merkle tree.
 type Proof struct {
 	Hashes [][]byte
 	Index  uint64
 }
 
-// newProof generates a Merkle proof
+// newProof generates a Merkle proof.
 func newProof(hashes [][]byte, index uint64) *Proof {
 	return &Proof{
 		Hashes: hashes,
@@ -77,7 +77,7 @@ func generateProofHash(data []byte, salt bool, proof *Proof, hashType HashType) 
 		} else {
 			proofHash = hashType.Hash(hash, proofHash)
 		}
-		index = index >> 1
+		index >>= 1
 	}
 	return proofHash
 }
