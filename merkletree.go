@@ -28,9 +28,7 @@
 // the relevant Merkle tree.  This allows for efficient verification of proofs without requiring the entire Merkle tree to be stored
 // or recreated.
 //
-//
-// Implementation notes
-//
+// # Implementation notes
 //
 // The tree pads its values to the next highest power of 2; values not supplied are treated as null with a value hash of 0.  This can
 // be seen graphically by generating a DOT representation of the graph with DOT().
@@ -44,6 +42,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/pkg/errors"
 )
@@ -52,6 +51,8 @@ import (
 type MerkleTree struct {
 	// if salt is true the data values are salted with their index
 	salt bool
+	// if sorted is true, the hash values are sorted before hashing branch nodes
+	sorted bool
 	// hash is a pointer to the hashing struct
 	hash HashType
 	// data is the data from which the Merkle tree is created
@@ -60,6 +61,32 @@ type MerkleTree struct {
 	nodes [][]byte
 }
 
+// A container which gives us the ability to sort the hashes by value
+// while maintaining the relative positions of the data and it's hash.
+type hashSorter struct {
+	// data from which the hashes are generated
+	data [][]byte
+	// Hashes of the data
+	hashes [][]byte
+}
+
+// Len length of the data slice.
+func (s hashSorter) Len() int {
+	return len(s.data)
+}
+
+// Swap the given indicies in both the data and leaf slices.
+func (s hashSorter) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+	s.hashes[i], s.hashes[j] = s.hashes[j], s.hashes[i]
+}
+
+// Compares the hash indicies, returns true if i is less than j.
+func (s hashSorter) Less(i, j int) bool {
+	return bytes.Compare(s.hashes[i], s.hashes[j]) == -1
+}
+
+// Index of the data in the MerkleTree.
 func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
 	for i, data := range t.data {
 		if bytes.Equal(data, input) {
@@ -128,8 +155,10 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 		}
 	}
 
-	return NewMultiProof(WithHashes(proofHashes),
+	return NewMultiProof(
+		WithHashes(proofHashes),
 		WithSalt(t.salt),
+		WithSorted(t.sorted),
 		WithHashType(t.hash),
 		WithIndices(indices),
 		WithValues(uint64(len(t.nodes)/2)),
@@ -147,29 +176,34 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 
 	// We pad our data length up to the power of 2.
 	nodes := make([][]byte, branchesLen+len(parameters.data)+(branchesLen-len(parameters.data)))
-	// Leaves.
-	indexSalt := make([]byte, 4)
-	for i := range parameters.data {
-		if parameters.salt {
-			binary.BigEndian.PutUint32(indexSalt, uint32(i))
-			nodes[i+branchesLen] = parameters.hash.Hash(parameters.data[i], indexSalt)
-		} else {
-			nodes[i+branchesLen] = parameters.hash.Hash(parameters.data[i])
-		}
-	}
+
+	// We put the leaves after the branches in the slice of nodes.
+	createLeaves(
+		parameters.data,
+		nodes[branchesLen:branchesLen+len(parameters.data)],
+		parameters.hash,
+		parameters.salt,
+		parameters.sorted,
+	)
+	// Pad the space left after the leaves.
 	for i := len(parameters.data) + branchesLen; i < len(nodes); i++ {
 		nodes[i] = make([]byte, parameters.hash.HashLength())
 	}
+
 	// Branches.
-	for i := branchesLen - 1; i > 0; i-- {
-		nodes[i] = parameters.hash.Hash(nodes[i*2], nodes[i*2+1])
-	}
+	createBranches(
+		nodes,
+		parameters.hash,
+		branchesLen,
+		parameters.sorted,
+	)
 
 	tree := &MerkleTree{
-		salt:  parameters.salt,
-		hash:  parameters.hash,
-		nodes: nodes,
-		data:  parameters.data,
+		salt:   parameters.salt,
+		sorted: parameters.sorted,
+		hash:   parameters.hash,
+		nodes:  nodes,
+		data:   parameters.data,
 	}
 
 	return tree, nil
@@ -182,7 +216,45 @@ func New(data [][]byte) (*MerkleTree, error) {
 	return NewTree(WithData(data))
 }
 
-// NewUsing creates a new Merkle tree using the provided raw data and supplied hash type.  Salting is used if requested.
+// Hashes the data slice, placing the result hashes into dest.
+// salt adds a salt to the hash using the index.
+// sorted sorts the leaves and data by the value of the leaf hash.
+func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sorted bool) {
+	indexSalt := make([]byte, 4)
+	for i := range data {
+		if salt {
+			binary.BigEndian.PutUint32(indexSalt, uint32(i))
+			dest[i] = hash.Hash(data[i], indexSalt)
+		} else {
+			dest[i] = hash.Hash(data[i])
+		}
+	}
+
+	if sorted {
+		sorter := hashSorter{
+			data:   data,
+			hashes: dest,
+		}
+		sort.Sort(sorter)
+	}
+}
+
+// Create the branch nodes from the existing leaf data.
+func createBranches(nodes [][]byte, hash HashType, leafOffset int, sorted bool) {
+	for i := leafOffset - 1; i > 0; i-- {
+		left := nodes[i*2]
+		right := nodes[i*2+1]
+
+		if sorted && bytes.Compare(left, right) == 1 {
+			nodes[i] = hash.Hash(right, left)
+		} else {
+			nodes[i] = hash.Hash(left, right)
+		}
+	}
+}
+
+// NewUsing creates a new Merkle tree using the provided raw data and supplied hash type.
+// Salting is used, and hashes are sorted if requested.
 // data must contain at least one element for it to be valid.
 // Deprecated: plase use NewTree().
 func NewUsing(data [][]byte, hash HashType, salt bool) (*MerkleTree, error) {
