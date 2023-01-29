@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Create the tree
-	tree, err := merkletree.New(data)
+	tree, err := merkletree.NewTree(merkletree.WithData(data))
 	if err != nil {
 		panic(err)
 	}

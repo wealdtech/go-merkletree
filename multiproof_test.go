@@ -27,7 +27,11 @@ import (
 func TestMultiProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			// Test proof for each data item individually
 			for j, data := range test.data {
@@ -51,7 +55,10 @@ func TestMissingMultiProof(t *testing.T) {
 	missingData := [][]byte{[]byte("missing")}
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateMultiProof(missingData)
 			assert.Equal(t, err.Error(), "data not found")
@@ -62,7 +69,10 @@ func TestMissingMultiProof(t *testing.T) {
 func TestBadMultiProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && len(test.data) > 1 {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 
 			proof, err := tree.GenerateMultiProof(test.data)

@@ -1,4 +1,4 @@
-// Copyright © 2018, 2019 Weald Technology Trading
+// Copyright © 2018 - 2023 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -42,11 +42,10 @@ package merkletree
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math"
 
-	"github.com/wealdtech/go-merkletree/blake2b"
+	"github.com/pkg/errors"
 )
 
 // MerkleTree is the structure for the Merkle tree.
@@ -132,49 +131,61 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 	return newMultiProof(proofHashes, indices, uint64(len(t.nodes)/2)), nil
 }
 
+// NewTree creates a new merkle tree using the provided information.
+func NewTree(params ...Parameter) (*MerkleTree, error) {
+	parameters, err := parseAndCheckParameters(params...)
+	if err != nil {
+		return nil, errors.Wrap(err, "problem with parameters")
+	}
+
+	branchesLen := int(math.Exp2(math.Ceil(math.Log2(float64(len(parameters.data))))))
+
+	// We pad our data length up to the power of 2.
+	nodes := make([][]byte, branchesLen+len(parameters.data)+(branchesLen-len(parameters.data)))
+	// Leaves.
+	indexSalt := make([]byte, 4)
+	for i := range parameters.data {
+		if parameters.salt {
+			binary.BigEndian.PutUint32(indexSalt, uint32(i))
+			nodes[i+branchesLen] = parameters.hash.Hash(parameters.data[i], indexSalt)
+		} else {
+			nodes[i+branchesLen] = parameters.hash.Hash(parameters.data[i])
+		}
+	}
+	for i := len(parameters.data) + branchesLen; i < len(nodes); i++ {
+		nodes[i] = make([]byte, parameters.hash.HashLength())
+	}
+	// Branches.
+	for i := branchesLen - 1; i > 0; i-- {
+		nodes[i] = parameters.hash.Hash(nodes[i*2], nodes[i*2+1])
+	}
+
+	tree := &MerkleTree{
+		salt:  parameters.salt,
+		hash:  parameters.hash,
+		nodes: nodes,
+		data:  parameters.data,
+	}
+
+	return tree, nil
+}
+
 // New creates a new Merkle tree using the provided raw data and default hash type.  Salting is not used.
 // data must contain at least one element for it to be valid.
+// Deprecated: plase use NewTree().
 func New(data [][]byte) (*MerkleTree, error) {
-	return NewUsing(data, blake2b.New(), false)
+	return NewTree(WithData(data))
 }
 
 // NewUsing creates a new Merkle tree using the provided raw data and supplied hash type.  Salting is used if requested.
 // data must contain at least one element for it to be valid.
+// Deprecated: plase use NewTree().
 func NewUsing(data [][]byte, hash HashType, salt bool) (*MerkleTree, error) {
-	if len(data) == 0 {
-		return nil, errors.New("tree must have at least 1 piece of data")
-	}
-
-	branchesLen := int(math.Exp2(math.Ceil(math.Log2(float64(len(data))))))
-
-	// We pad our data length up to the power of 2.
-	nodes := make([][]byte, branchesLen+len(data)+(branchesLen-len(data)))
-	// Leaves.
-	indexSalt := make([]byte, 4)
-	for i := range data {
-		if salt {
-			binary.BigEndian.PutUint32(indexSalt, uint32(i))
-			nodes[i+branchesLen] = hash.Hash(data[i], indexSalt)
-		} else {
-			nodes[i+branchesLen] = hash.Hash(data[i])
-		}
-	}
-	for i := len(data) + branchesLen; i < len(nodes); i++ {
-		nodes[i] = make([]byte, hash.HashLength())
-	}
-	// Branches.
-	for i := branchesLen - 1; i > 0; i-- {
-		nodes[i] = hash.Hash(nodes[i*2], nodes[i*2+1])
-	}
-
-	tree := &MerkleTree{
-		salt:  salt,
-		hash:  hash,
-		nodes: nodes,
-		data:  data,
-	}
-
-	return tree, nil
+	return NewTree(
+		WithData(data),
+		WithHashType(hash),
+		WithSalt(salt),
+	)
 }
 
 // Pollard returns the Merkle root plus branches to a certain height.  Height 0 will return just the root, height 1 the root plus

@@ -3,6 +3,7 @@ module github.com/wealdtech/go-merkletree
 go 1.19
 
 require (
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.5.0
 )

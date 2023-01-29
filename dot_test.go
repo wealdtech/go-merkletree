@@ -23,7 +23,11 @@ import (
 func TestDOT(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOT(new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
 		}
@@ -33,7 +37,11 @@ func TestDOT(t *testing.T) {
 func TestDOTProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOTProof(nil, new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
 			for j := range test.proofDots {
@@ -52,7 +60,11 @@ func TestDOTProof(t *testing.T) {
 func TestDOTMultiProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.multiProofDot != "" {
-			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOTMultiProof(nil, new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
 			proof, err := tree.GenerateMultiProof(test.data)

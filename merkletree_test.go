@@ -59,12 +59,12 @@ var tests = []struct {
 }{
 	{ // 0
 		hashType:  blake2b.New(),
-		createErr: errors.New("tree must have at least 1 piece of data"),
+		createErr: errors.New("problem with parameters: tree must have at least 1 piece of data"),
 	},
 	{ // 1
 		hashType:  blake2b.New(),
 		data:      [][]byte{},
-		createErr: errors.New("tree must have at least 1 piece of data"),
+		createErr: errors.New("problem with parameters: tree must have at least 1 piece of data"),
 	},
 	{ // 2
 		hashType: blake2b.New(),
@@ -287,7 +287,10 @@ var tests = []struct {
 
 func TestNew(t *testing.T) {
 	for i, test := range tests {
-		tree, err := NewUsing(test.data, test.hashType, false)
+		tree, err := NewTree(
+			WithData(test.data),
+			WithHashType(test.hashType),
+		)
 		if test.createErr != nil {
 			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
 		} else {
@@ -300,7 +303,10 @@ func TestNew(t *testing.T) {
 func TestString(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, fmt.Sprintf("%x", test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
 		}

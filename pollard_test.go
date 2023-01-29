@@ -24,7 +24,10 @@ import (
 func TestSimplePollard(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.pollards != nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j := 0; j < int(math.Ceil(math.Log2(float64(len(test.data))))); j++ {
 				pollard := tree.Pollard(j)
@@ -37,7 +40,10 @@ func TestSimplePollard(t *testing.T) {
 func TestPollard(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.pollards != nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j := 0; j < int(math.Ceil(math.Log2(float64(len(test.data))))); j++ {
 				pollard := tree.Pollard(j)
@@ -51,7 +57,10 @@ func TestPollard(t *testing.T) {
 func TestBadPollard(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.pollards != nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j := 0; j < int(math.Ceil(math.Log2(float64(len(test.data))))); j++ {
 				pollard := tree.Pollard(j)

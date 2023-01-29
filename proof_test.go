@@ -24,7 +24,10 @@ import (
 func TestProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j, data := range test.data {
 				proof, err := tree.GenerateProof(data, 0)
@@ -40,7 +43,11 @@ func TestProof(t *testing.T) {
 func TestSaltedProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.salt {
-			tree, err := NewUsing(test.data, test.hashType, test.salt)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.salt, tree.Salt(), fmt.Sprintf("unexpected salt at test %d", i))
 			assert.Equal(t, test.saltedRoot, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
@@ -58,7 +65,10 @@ func TestSaltedProof(t *testing.T) {
 func TestPollardProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && test.pollards != nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j, data := range test.data {
 				for k := range test.pollards {
@@ -79,7 +89,10 @@ func TestMissingProof(t *testing.T) {
 	missingData := []byte("missing")
 	for i, test := range tests {
 		if test.createErr == nil {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateProof(missingData, 0)
 			assert.Equal(t, err.Error(), "data not found")
@@ -90,7 +103,10 @@ func TestMissingProof(t *testing.T) {
 func TestBadProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil && len(test.data) > 1 {
-			tree, err := NewUsing(test.data, test.hashType, false)
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			for j, data := range test.data {
 				proof, err := tree.GenerateProof(data, 0)
@@ -104,8 +120,10 @@ func TestBadProof(t *testing.T) {
 	}
 }
 
-const _letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const _letterslen = len(_letters)
+const (
+	_letters    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	_letterslen = len(_letters)
+)
 
 func _randomString(n int) string {
 	res := make([]byte, n)
