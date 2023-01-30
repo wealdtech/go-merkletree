@@ -1,4 +1,4 @@
-// Copyright © 2018, 2019 Weald Technology Trading
+// Copyright © 2018 - 2023 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,26 +17,68 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"github.com/pkg/errors"
 	"github.com/wealdtech/go-merkletree/blake2b"
 )
 
 // MultiProof is a single structure containing multiple proofs of a Merkle tree.
 type MultiProof struct {
-	// Values is the number of values in the Merkle tree
+	// Values is the number of values in the Merkle tree.
 	Values uint64
 	// Hashes are indexed hashes of values that cannot be calculated from the index data
 	Hashes map[uint64][]byte
 	// Indices are the indices of the data that can be proved with the hashes
 	Indices []uint64
+	salt    bool
+	hash    HashType
 }
 
-// newMultiProof generates a Merkle proof.
-func newMultiProof(hashes map[uint64][]byte, indices []uint64, values uint64) *MultiProof {
-	return &MultiProof{
-		Values:  values,
-		Hashes:  hashes,
-		Indices: indices,
+// NewMultiProof creates a new multiproof using the provided information.
+func NewMultiProof(params ...Parameter) (*MultiProof, error) {
+	parameters, err := parseAndCheckMultiProofParameters(params...)
+	if err != nil {
+		return nil, errors.Wrap(err, "problem with parameters")
 	}
+
+	return &MultiProof{
+		Values:  parameters.values,
+		Hashes:  parameters.hashes,
+		Indices: parameters.indices,
+		salt:    parameters.salt,
+		hash:    parameters.hash,
+	}, nil
+}
+
+// Verify verifies a multiproof.
+func (p *MultiProof) Verify(data [][]byte, root []byte) (bool, error) {
+	// Step 1 create hashes for all values.
+	var proofHash []byte
+	indexSalt := make([]byte, 4)
+	for i, index := range p.Indices {
+		if p.salt {
+			binary.BigEndian.PutUint32(indexSalt, uint32(index))
+			proofHash = p.hash.Hash(data[i], indexSalt)
+		} else {
+			proofHash = p.hash.Hash(data[i])
+		}
+		p.Hashes[index+p.Values] = proofHash
+	}
+
+	// Step 2 calculate values up the tree.
+	for i := p.Values - 1; i > 0; i-- {
+		_, exists := p.Hashes[i]
+		if !exists {
+			child1, exists := p.Hashes[i*2]
+			if exists {
+				child2, exists := p.Hashes[i*2+1]
+				if exists {
+					p.Hashes[i] = p.hash.Hash(child1, child2)
+				}
+			}
+		}
+	}
+
+	return bytes.Equal(p.Hashes[1], root), nil
 }
 
 // VerifyMultiProof verifies multiple Merkle tree proofs for pieces of data using the default hash type.
@@ -45,6 +87,8 @@ func newMultiProof(hashes map[uint64][]byte, indices []uint64, values uint64) *M
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
+//
+// Deprecated: please use MultiProof.Verify(...)
 func VerifyMultiProof(data [][]byte, salt bool, proof *MultiProof, root []byte) (bool, error) {
 	return VerifyMultiProofUsing(data, salt, proof, root, blake2b.New())
 }
@@ -55,36 +99,18 @@ func VerifyMultiProof(data [][]byte, salt bool, proof *MultiProof, root []byte) 
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
+//
+// Deprecated: please use MultiProof.Verify(...)
 func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []byte, hashType HashType) (bool, error) {
-	// Step 1 create hashes for all values.
-	var proofHash []byte
-	indexSalt := make([]byte, 4)
-	for i, index := range proof.Indices {
-		if salt {
-			binary.BigEndian.PutUint32(indexSalt, uint32(index))
-			proofHash = hashType.Hash(data[i], indexSalt)
-		} else {
-			proofHash = hashType.Hash(data[i])
-		}
-		proof.Hashes[index+proof.Values] = proofHash
+	mp, err := NewMultiProof(
+		WithSalt(salt),
+		WithHashType(hashType),
+		WithIndices(proof.Indices),
+		WithHashes(proof.Hashes),
+		WithValues(proof.Values),
+	)
+	if err != nil {
+		return false, err
 	}
-
-	// Step 2 calculate values up the tree.
-	for i := proof.Values - 1; i > 0; i-- {
-		_, exists := proof.Hashes[i]
-		if !exists {
-			child1, exists := proof.Hashes[i*2]
-			if exists {
-				child2, exists := proof.Hashes[i*2+1]
-				if exists {
-					proof.Hashes[i] = hashType.Hash(child1, child2)
-				}
-			}
-		}
-	}
-
-	if !bytes.Equal(proof.Hashes[1], root) {
-		return false, nil
-	}
-	return true, nil
+	return mp.Verify(data, root)
 }

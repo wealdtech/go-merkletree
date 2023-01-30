@@ -1,4 +1,4 @@
-// Copyright © 2018, 2019 Weald Technology Trading
+// Copyright © 2018 - 2023 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,11 +40,28 @@ func TestMultiProof(t *testing.T) {
 				proven, err := VerifyMultiProofUsing([][]byte{data}, test.salt, proof, tree.Root(), test.hashType)
 				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
 				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
+				proven, err = proof.Verify([][]byte{data}, tree.Root())
+				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
+				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
+			}
+			// Test proof for each data item cumulatively.
+			var proof *MultiProof
+			for j, data := range test.data {
+				if j == 0 {
+					proof, err = tree.GenerateMultiProof([][]byte{data})
+					assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
+				}
+				proven, err := proof.Verify([][]byte{data}, tree.Root())
+				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
+				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
 			}
 			// Test proof for all data
-			proof, err := tree.GenerateMultiProof(test.data)
+			proof, err = tree.GenerateMultiProof(test.data)
 			assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d", i))
 			proven, err := VerifyMultiProofUsing(test.data, test.salt, proof, tree.Root(), test.hashType)
+			assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
+			assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
+			proven, err = proof.Verify(test.data, tree.Root())
 			assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
 			assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
 		}

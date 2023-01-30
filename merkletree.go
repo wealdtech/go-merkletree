@@ -128,12 +128,17 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 		}
 	}
 
-	return newMultiProof(proofHashes, indices, uint64(len(t.nodes)/2)), nil
+	return NewMultiProof(WithHashes(proofHashes),
+		WithSalt(t.salt),
+		WithHashType(t.hash),
+		WithIndices(indices),
+		WithValues(uint64(len(t.nodes)/2)),
+	)
 }
 
 // NewTree creates a new merkle tree using the provided information.
 func NewTree(params ...Parameter) (*MerkleTree, error) {
-	parameters, err := parseAndCheckParameters(params...)
+	parameters, err := parseAndCheckTreeParameters(params...)
 	if err != nil {
 		return nil, errors.Wrap(err, "problem with parameters")
 	}
