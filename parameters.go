@@ -25,6 +25,7 @@ type parameters struct {
 	hashes  map[uint64][]byte
 	indices []uint64
 	salt    bool
+	sorted  bool
 	hash    HashType
 }
 
@@ -71,6 +72,13 @@ func WithIndices(indices []uint64) Parameter {
 func WithSalt(salt bool) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.salt = salt
+	})
+}
+
+// WithSorted sets the sorted for the merkle tree.
+func WithSorted(sorted bool) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.sorted = sorted
 	})
 }
 

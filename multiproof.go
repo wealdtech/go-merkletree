@@ -30,7 +30,9 @@ type MultiProof struct {
 	// Indices are the indices of the data that can be proved with the hashes
 	Indices []uint64
 	salt    bool
-	hash    HashType
+	// if sorted is true, the hash values are sorted before hashing branch nodes
+	sorted bool
+	hash   HashType
 }
 
 // NewMultiProof creates a new multiproof using the provided information.
@@ -45,6 +47,7 @@ func NewMultiProof(params ...Parameter) (*MultiProof, error) {
 		Hashes:  parameters.hashes,
 		Indices: parameters.indices,
 		salt:    parameters.salt,
+		sorted:  parameters.sorted,
 		hash:    parameters.hash,
 	}, nil
 }
@@ -72,7 +75,11 @@ func (p *MultiProof) Verify(data [][]byte, root []byte) (bool, error) {
 			if exists {
 				child2, exists := p.Hashes[i*2+1]
 				if exists {
-					p.Hashes[i] = p.hash.Hash(child1, child2)
+					if p.sorted && bytes.Compare(child1, child2) == 1 {
+						p.Hashes[i] = p.hash.Hash(child2, child1)
+					} else {
+						p.Hashes[i] = p.hash.Hash(child1, child2)
+					}
 				}
 			}
 		}

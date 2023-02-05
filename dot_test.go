@@ -27,6 +27,7 @@ func TestDOT(t *testing.T) {
 				WithData(test.data),
 				WithHashType(test.hashType),
 				WithSalt(test.salt),
+				WithSorted(test.sorted),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOT(new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
@@ -41,6 +42,7 @@ func TestDOTProof(t *testing.T) {
 				WithData(test.data),
 				WithHashType(test.hashType),
 				WithSalt(test.salt),
+				WithSorted(test.sorted),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOTProof(nil, new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))
@@ -64,6 +66,7 @@ func TestDOTMultiProof(t *testing.T) {
 				WithData(test.data),
 				WithHashType(test.hashType),
 				WithSalt(test.salt),
+				WithSorted(test.sorted),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.dot, tree.DOTMultiProof(nil, new(StringFormatter), nil), fmt.Sprintf("incorrect DOT representation at test %d", i))

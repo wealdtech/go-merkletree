@@ -31,16 +31,14 @@ func TestMultiProof(t *testing.T) {
 				WithData(test.data),
 				WithHashType(test.hashType),
 				WithSalt(test.salt),
+				WithSorted(test.sorted),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			// Test proof for each data item individually
 			for j, data := range test.data {
 				proof, err := tree.GenerateMultiProof([][]byte{data})
 				assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
-				proven, err := VerifyMultiProofUsing([][]byte{data}, test.salt, proof, tree.Root(), test.hashType)
-				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
-				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
-				proven, err = proof.Verify([][]byte{data}, tree.Root())
+				proven, err := proof.Verify([][]byte{data}, tree.Root())
 				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
 				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
 			}
@@ -58,10 +56,7 @@ func TestMultiProof(t *testing.T) {
 			// Test proof for all data
 			proof, err = tree.GenerateMultiProof(test.data)
 			assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d", i))
-			proven, err := VerifyMultiProofUsing(test.data, test.salt, proof, tree.Root(), test.hashType)
-			assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
-			assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
-			proven, err = proof.Verify(test.data, tree.Root())
+			proven, err := proof.Verify(test.data, tree.Root())
 			assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
 			assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
 		}

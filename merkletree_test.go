@@ -54,6 +54,8 @@ var tests = []struct {
 	multiProofDot string
 	// salt the data?
 	salt bool
+	// should the hashes be sorted?
+	sorted bool
 	// saltedRoot hash after the tree has been created with the salt
 	saltedRoot []byte
 }{
@@ -283,6 +285,43 @@ var tests = []struct {
 		salt:       true,
 		saltedRoot: _byteArray("0x9c68ec06cd268662d643706a29bf697d6873edff158895aee0b33df3ff741bcc17f1886a4a13408588c1428cd1b3455c1c0b800d304cebffb1aeb5941fe50af8"),
 	},
+	{ // 10 - Simple sorted no change
+		hashType: sha3.New256(),
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+		},
+		root:   _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		dot:    `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
+		sorted: true,
+	},
+	{ // 11 - Simple sorted swapped
+		hashType: sha3.New256(),
+		data: [][]byte{
+			[]byte("Bar"),
+			[]byte("Foo"),
+		},
+		root:   _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		dot:    `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
+		sorted: true,
+	},
+	{ // 12 - Complicated sorted
+		hashType: sha3.New256(),
+		data: [][]byte{
+			[]byte("Foo"),
+			[]byte("Bar"),
+			[]byte("Baz"),
+			[]byte("Qux"),
+			[]byte("Quux"),
+			[]byte("Quuz"),
+			[]byte("FooBar"),
+			[]byte("FooBaz"),
+			[]byte("BarBaz"),
+		},
+		root:   _byteArray("b7c3dd02859b9fb386507ad8de3746b152bc3f9c8aa10fed9999c223f05cca7c"),
+		sorted: true,
+		dot:    "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Qux\" [shape=oval];\"Qux\"->16;16 [label=\"003d…71bd\"];16->8;\"Foo\" [shape=oval];\"Foo\"->17;17 [label=\"195e…278a\"];16->17 [style=invisible arrowhead=none];17->8;\"FooBar\" [shape=oval];\"FooBar\"->18;18 [label=\"3007…265f\"];17->18 [style=invisible arrowhead=none];18->9;\"Bar\" [shape=oval];\"Bar\"->19;19 [label=\"65a0…1755\"];18->19 [style=invisible arrowhead=none];19->9;\"Baz\" [shape=oval];\"Baz\"->20;20 [label=\"6a08…3c41\"];19->20 [style=invisible arrowhead=none];20->10;\"Quux\" [shape=oval];\"Quux\"->21;21 [label=\"7781…1042\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBaz\" [shape=oval];\"FooBaz\"->22;22 [label=\"9209…fb63\"];21->22 [style=invisible arrowhead=none];22->11;\"Quuz\" [shape=oval];\"Quuz\"->23;23 [label=\"ce1e…f6ea\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval];\"BarBaz\"->24;24 [label=\"f86c…483b\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"070f…81e0\"];15->7;14 [label=\"070f…81e0\"];14->7;13 [label=\"070f…81e0\"];13->6;12 [label=\"eaa6…7b07\"];12->6;11 [label=\"f4e2…59b9\"];11->5;10 [label=\"1bea…1f21\"];10->5;9 [label=\"ff5a…afc1\"];9->4;8 [label=\"0fb6…8e6c\"];8->4;7 [label=\"53da…4530\"];7->3;6 [label=\"812c…f0f7\"];6->3;5 [label=\"e0c3…a1ad\"];5->2;4 [label=\"1e5e…1997\"];4->2;3 [label=\"4f01…3c5c\"];3->1;2 [label=\"4ab6…2203\"];2->1;1 [label=\"1109…6371\"];}",
+	},
 }
 
 func TestNew(t *testing.T) {
@@ -291,12 +330,15 @@ func TestNew(t *testing.T) {
 			WithData(test.data),
 			WithHashType(test.hashType),
 		)
+		treeUsing, _ := NewUsing(test.data, test.hashType, false)
+		assert.Equal(t, tree, treeUsing, fmt.Sprintf("NewTree vs NewUsing does not match at test %d", i))
 		if test.createErr != nil {
 			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
 		} else {
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.root, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
 		}
+
 	}
 }
 
@@ -311,4 +353,20 @@ func TestString(t *testing.T) {
 			assert.Equal(t, fmt.Sprintf("%x", test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
 		}
 	}
+}
+
+func TestInvalidMultiProof(t *testing.T) {
+	proof, err := NewMultiProof()
+	assert.Nil(t, proof, "invalid params proof should be nil")
+	assert.Error(t, err, "invalid params should error")
+
+	verified, err := VerifyMultiProofUsing(
+		nil,
+		false,
+		&MultiProof{},
+		nil,
+		nil,
+	)
+	assert.False(t, verified, "invalid params verified should be false")
+	assert.Error(t, err, "invalid params should error")
 }

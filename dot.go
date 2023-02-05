@@ -28,9 +28,7 @@
 // the relevant Merkle tree.  This allows for efficient verification of proofs without requiring the entire Merkle tree to be stored
 // or recreated.
 //
-//
-// Implementation notes
-//
+// # Implementation notes
 //
 // The tree pads its values to the next highest power of 2; values not supplied are treated as null with a value hash of 0.  This can
 // be seen graphically by generating a DOT representation of the graph with DOT().
