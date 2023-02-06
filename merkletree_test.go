@@ -342,6 +342,26 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestExportImport(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			exported, err := tree.Export()
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			imported, err := ImportMerkleTree(exported, test.hashType)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			assert.Equal(t, tree.Root(), imported.Root())
+		}
+	}
+}
+
 func TestString(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {

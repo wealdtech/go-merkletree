@@ -40,6 +40,7 @@ package merkletree
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -59,6 +60,45 @@ type MerkleTree struct {
 	data [][]byte
 	// nodes are the leaf and branch nodes of the Merkle tree
 	nodes [][]byte
+}
+
+// MerkleTreeExport is the structure for exporting the MerkleTree, the hashtype needs to be specified on load
+type MerkleTreeExport struct {
+	// if salt is true the data values are salted with their index
+	Salt bool `json:"salt"`
+	// if sorted is true, the hash values are sorted before hashing branch nodes
+	Sorted bool `json:"sorted"`
+	// data is the data from which the Merkle tree is created
+	Data [][]byte `json:"data"`
+	// nodes are the leaf and branch nodes of the Merkle tree
+	Nodes [][]byte `json:"nodes"`
+}
+
+func (t *MerkleTree) Export() ([]byte, error) {
+	m := MerkleTreeExport{
+		Salt:   t.salt,
+		Sorted: t.sorted,
+		Data:   t.data,
+		Nodes:  t.nodes,
+	}
+	return json.Marshal(m)
+}
+
+func ImportMerkleTree(imp []byte, hash HashType) (*MerkleTree, error) {
+	var tree MerkleTreeExport
+	err := json.Unmarshal(imp, &tree)
+	if err != nil {
+		return nil, err
+	}
+
+	m := MerkleTree{
+		salt:   tree.Salt,
+		sorted: tree.Sorted,
+		hash:   hash,
+		data:   tree.Data,
+		nodes:  tree.Nodes,
+	}
+	return &m, nil
 }
 
 // A container which gives us the ability to sort the hashes by value
