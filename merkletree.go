@@ -62,8 +62,8 @@ type MerkleTree struct {
 	nodes [][]byte
 }
 
-// MerkleTreeExport is the structure for exporting the MerkleTree, the hashtype needs to be specified on load
-type MerkleTreeExport struct {
+// Export is the structure for exporting the MerkleTree, the hashtype needs to be specified on load.
+type Export struct {
 	// if salt is true the data values are salted with their index
 	Salt bool `json:"salt"`
 	// if sorted is true, the hash values are sorted before hashing branch nodes
@@ -75,7 +75,7 @@ type MerkleTreeExport struct {
 }
 
 func (t *MerkleTree) Export() ([]byte, error) {
-	m := MerkleTreeExport{
+	m := Export{
 		Salt:   t.salt,
 		Sorted: t.sorted,
 		Data:   t.data,
@@ -85,7 +85,7 @@ func (t *MerkleTree) Export() ([]byte, error) {
 }
 
 func ImportMerkleTree(imp []byte, hash HashType) (*MerkleTree, error) {
-	var tree MerkleTreeExport
+	var tree Export
 	err := json.Unmarshal(imp, &tree)
 	if err != nil {
 		return nil, err
