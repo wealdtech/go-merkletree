@@ -40,11 +40,11 @@ package merkletree
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
 
+	"github.com/mailru/easyjson"
 	"github.com/pkg/errors"
 )
 
@@ -81,12 +81,12 @@ func (t *MerkleTree) Export() ([]byte, error) {
 		Data:   t.data,
 		Nodes:  t.nodes,
 	}
-	return json.Marshal(m)
+	return easyjson.Marshal(m)
 }
 
 func ImportMerkleTree(imp []byte, hash HashType) (*MerkleTree, error) {
-	var tree Export
-	err := json.Unmarshal(imp, &tree)
+	tree := &Export{}
+	err := easyjson.Unmarshal(imp, tree)
 	if err != nil {
 		return nil, err
 	}
