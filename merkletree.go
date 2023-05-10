@@ -40,6 +40,7 @@ package merkletree
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"math"
 	"sort"
@@ -72,6 +73,39 @@ type Export struct {
 	Data [][]byte `json:"data"`
 	// nodes are the leaf and branch nodes of the Merkle tree
 	Nodes [][]byte `json:"nodes"`
+}
+
+func (t *MerkleTree) ExportBinary() ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	m := Export{
+		Salt:   t.salt,
+		Sorted: t.sorted,
+		Data:   t.data,
+		Nodes:  t.nodes,
+	}
+	if err := enc.Encode(m); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func ImportBinaryMerkleTree(imp []byte, hash HashType) (*MerkleTree, error) {
+	tree := &Export{}
+	buf := bytes.NewBuffer(imp)
+	dec := gob.NewDecoder(buf)
+	if err := dec.Decode(tree); err != nil {
+		return nil, err
+	}
+
+	m := MerkleTree{
+		salt:   tree.Salt,
+		sorted: tree.Sorted,
+		hash:   hash,
+		data:   tree.Data,
+		nodes:  tree.Nodes,
+	}
+	return &m, nil
 }
 
 func (t *MerkleTree) Export() ([]byte, error) {

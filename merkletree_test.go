@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/wealdtech/go-merkletree/blake2b"
@@ -360,6 +361,76 @@ func TestExportImport(t *testing.T) {
 			assert.Equal(t, tree.Root(), imported.Root())
 		}
 	}
+}
+
+func TestBinaryExportImport(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			exported, err := tree.ExportBinary()
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			imported, err := ImportBinaryMerkleTree(exported, test.hashType)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			assert.Equal(t, tree.Root(), imported.Root())
+		}
+	}
+}
+
+func TestExportSizes(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			exportedJson, err := tree.Export()
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			exportedBinary, err := tree.ExportBinary()
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			fmt.Println(len(exportedBinary), len(exportedJson))
+
+		}
+	}
+}
+
+func TestExportSpeed(t *testing.T) {
+	test := tests[12]
+	tree, err := NewTree(
+		WithData(test.data),
+		WithHashType(test.hashType),
+	)
+	assert.Nil(t, err, fmt.Sprintf("failed to create tree"))
+
+	amount := 1000
+
+	track := time.Now().UnixNano()
+	for i := 0; i < amount; i++ {
+		_, err := tree.Export()
+		assert.Nil(t, err, fmt.Sprintf("failed to create tree"))
+	}
+	jsonTime := time.Now().UnixNano() - track
+	track = time.Now().UnixNano()
+	for i := 0; i < amount; i++ {
+		_, err := tree.ExportBinary()
+		assert.Nil(t, err, fmt.Sprintf("failed to create tree"))
+	}
+	binTime := time.Now().UnixNano() - track
+
+	fmt.Println(jsonTime, binTime)
+
+	assert.Equal(t, true, jsonTime < binTime)
+
 }
 
 func TestString(t *testing.T) {
