@@ -2,9 +2,10 @@ package merkletree
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/wealdtech/go-merkletree/sha3"
-	"testing"
 )
 
 func TestEncoding(t *testing.T) {
@@ -29,5 +30,4 @@ func TestEncoding(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, tree.Root(), newTree.Root())
-
 }

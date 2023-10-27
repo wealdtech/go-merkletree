@@ -3,13 +3,13 @@ package merkletree
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/wealdtech/go-merkletree/blake2b"
 	"github.com/wealdtech/go-merkletree/keccak256"
 	"github.com/wealdtech/go-merkletree/sha3"
 )
 
 func (t *MerkleTree) MarshalJSON() ([]byte, error) {
-
 	type ExportTree MerkleTree
 
 	return json.Marshal(&struct {
@@ -22,7 +22,6 @@ func (t *MerkleTree) MarshalJSON() ([]byte, error) {
 }
 
 func (t *MerkleTree) UnmarshalJSON(data []byte) error {
-
 	type ExportTree MerkleTree
 	aux := &struct {
 		HashType string `json:"hash_type"`
