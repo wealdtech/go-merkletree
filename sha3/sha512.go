@@ -32,6 +32,10 @@ func (h *SHA512) HashLength() int {
 	return _512hashlength
 }
 
+func (h *SHA512) HashName() string {
+	return "sha512"
+}
+
 // Hash generates a SHA3 hash from input byte arrays.
 func (h *SHA512) Hash(data ...[]byte) []byte {
 	var hash [_512hashlength]byte

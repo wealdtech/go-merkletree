@@ -21,6 +21,9 @@ type HashType interface {
 	// Hash calculates the hash of a given input.
 	Hash(...[]byte) []byte
 
+	// HashName returns the name of the hashing algorithm to be used in encoding
+	HashName() string
+
 	// HashLength provides the length of the hash.
 	HashLength() int
 }

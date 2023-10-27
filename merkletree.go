@@ -49,16 +49,16 @@ import (
 
 // MerkleTree is the structure for the Merkle tree.
 type MerkleTree struct {
-	// if salt is true the data values are salted with their index
-	salt bool
-	// if sorted is true, the hash values are sorted before hashing branch nodes
-	sorted bool
-	// hash is a pointer to the hashing struct
-	hash HashType
-	// data is the data from which the Merkle tree is created
-	data [][]byte
-	// nodes are the leaf and branch nodes of the Merkle tree
-	nodes [][]byte
+	// if Salt is true the Data values are salted with their index
+	Salt bool `json:"salt"`
+	// if Sorted is true, the Hash values are Sorted before hashing branch Nodes
+	Sorted bool `json:"sorted"`
+	// Hash is a pointer to the hashing struct
+	Hash HashType `json:"hash_type"`
+	// Data is the Data from which the Merkle tree is created
+	Data [][]byte `json:"data"`
+	// Nodes are the leaf and branch Nodes of the Merkle tree
+	Nodes [][]byte `json:"nodes"`
 }
 
 // A container which gives us the ability to sort the hashes by value
@@ -88,7 +88,7 @@ func (s hashSorter) Less(i, j int) bool {
 
 // Index of the data in the MerkleTree.
 func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
-	for i, data := range t.data {
+	for i, data := range t.Data {
 		if bytes.Equal(data, input) {
 			return uint64(i), nil
 		}
@@ -107,13 +107,13 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 		return nil, err
 	}
 
-	proofLen := int(math.Ceil(math.Log2(float64(len(t.data))))) - height
+	proofLen := int(math.Ceil(math.Log2(float64(len(t.Data))))) - height
 	hashes := make([][]byte, proofLen)
 
 	cur := 0
 	minI := uint64(math.Pow(2, float64(height+1))) - 1
-	for i := index + uint64(len(t.nodes)/2); i > minI; i /= 2 {
-		hashes[cur] = t.nodes[i^1]
+	for i := index + uint64(len(t.Nodes)/2); i > minI; i /= 2 {
+		hashes[cur] = t.Nodes[i^1]
 		cur++
 	}
 	return newProof(hashes, index), nil
@@ -136,10 +136,10 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 
 	// Step 2: combine the hashes across all proofs and highlight all calculated indices.
 	proofHashes := make(map[uint64][]byte)
-	calculatedIndices := make([]bool, len(t.nodes))
+	calculatedIndices := make([]bool, len(t.Nodes))
 	for i, index := range indices {
 		hashNum := 0
-		for j := index + uint64(math.Ceil(float64(len(t.nodes))/2)); j > 1; j /= 2 {
+		for j := index + uint64(math.Ceil(float64(len(t.Nodes))/2)); j > 1; j /= 2 {
 			proofHashes[j^1] = hashes[i][hashNum]
 			calculatedIndices[j] = true
 			hashNum++
@@ -148,7 +148,7 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 
 	// Step 3: remove any hashes that can be calculated.
 	for _, index := range indices {
-		for j := index + uint64(math.Ceil(float64(len(t.nodes))/2)); j > 1; j /= 2 {
+		for j := index + uint64(math.Ceil(float64(len(t.Nodes))/2)); j > 1; j /= 2 {
 			if calculatedIndices[j^1] {
 				delete(proofHashes, j^1)
 			}
@@ -157,11 +157,11 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 
 	return NewMultiProof(
 		WithHashes(proofHashes),
-		WithSalt(t.salt),
-		WithSorted(t.sorted),
-		WithHashType(t.hash),
+		WithSalt(t.Salt),
+		WithSorted(t.Sorted),
+		WithHashType(t.Hash),
 		WithIndices(indices),
-		WithValues(uint64(len(t.nodes)/2)),
+		WithValues(uint64(len(t.Nodes)/2)),
 	)
 }
 
@@ -199,11 +199,11 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 	)
 
 	tree := &MerkleTree{
-		salt:   parameters.salt,
-		sorted: parameters.sorted,
-		hash:   parameters.hash,
-		nodes:  nodes,
-		data:   parameters.data,
+		Salt:   parameters.salt,
+		Sorted: parameters.sorted,
+		Hash:   parameters.hash,
+		Nodes:  nodes,
+		Data:   parameters.data,
 	}
 
 	return tree, nil
@@ -268,20 +268,20 @@ func NewUsing(data [][]byte, hash HashType, salt bool) (*MerkleTree, error) {
 // Pollard returns the Merkle root plus branches to a certain height.  Height 0 will return just the root, height 1 the root plus
 // the two branches directly above it, height 2 the root, two branches directly above it and four branches directly above them, etc.
 func (t *MerkleTree) Pollard(height int) [][]byte {
-	return t.nodes[1:int(math.Exp2(float64(height+1)))]
+	return t.Nodes[1:int(math.Exp2(float64(height+1)))]
 }
 
 // Root returns the Merkle root (hash of the root node) of the tree.
 func (t *MerkleTree) Root() []byte {
-	return t.nodes[1]
+	return t.Nodes[1]
 }
 
 // Salt returns the true if the values in this Merkle tree are salted.
-func (t *MerkleTree) Salt() bool {
-	return t.salt
+func (t *MerkleTree) GetSalt() bool {
+	return t.Salt
 }
 
 // String implements the stringer interface.
 func (t *MerkleTree) String() string {
-	return fmt.Sprintf("%x", t.nodes[1])
+	return fmt.Sprintf("%x", t.Nodes[1])
 }

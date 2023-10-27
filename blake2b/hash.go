@@ -32,6 +32,10 @@ func (h *BLAKE2b) HashLength() int {
 	return _hashlength
 }
 
+func (h *BLAKE2b) HashName() string {
+	return "blake2b"
+}
+
 // Hash generates a BLAKE2b hash from input byte arrays.
 func (h *BLAKE2b) Hash(data ...[]byte) []byte {
 	var hash [_hashlength]byte
