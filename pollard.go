@@ -35,5 +35,6 @@ func VerifyPollardUsing(pollard [][]byte, hashType HashType) bool {
 			return false
 		}
 	}
+
 	return true
 }

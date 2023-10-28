@@ -9,18 +9,25 @@ import (
 	"github.com/wealdtech/go-merkletree/sha3"
 )
 
+// MarshalJSON implements json.Marshaler.
 func (t *MerkleTree) MarshalJSON() ([]byte, error) {
 	type ExportTree MerkleTree
 
-	return json.Marshal(&struct {
+	data, err := json.Marshal(&struct {
 		HashType string `json:"hash_type"`
 		*ExportTree
 	}{
 		HashType:   t.Hash.HashName(),
 		ExportTree: (*ExportTree)(t),
 	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal JSON")
+	}
+
+	return data, nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (t *MerkleTree) UnmarshalJSON(data []byte) error {
 	type ExportTree MerkleTree
 	aux := &struct {
@@ -30,7 +37,7 @@ func (t *MerkleTree) UnmarshalJSON(data []byte) error {
 		ExportTree: (*ExportTree)(t),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+		return errors.Wrap(err, "failed to unmarshal JSON")
 	}
 
 	switch aux.HashType {

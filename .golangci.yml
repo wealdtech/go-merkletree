@@ -118,6 +118,10 @@ linters-settings:
         json: snake
         yaml: snake
 
+  nlreturn:
+    # Allow two-line blocks without requiring a newline
+    block-size: 3
+
 linters:
   # Enable all available linters.
   # Default: false
@@ -125,45 +129,21 @@ linters:
   # Disable specific linter
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
-    - contextcheck
-    - cyclop
     - deadcode
-    - dupl
-    - errorlint
-    - exhaustive
+    - depguard
     - exhaustivestruct
     - exhaustruct
-    - forbidigo
-    - forcetypeassert
-    - funlen
-    - gci
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - goconst
     - goerr113
-    - goheader
     - golint
     - gomnd
     - ifshort
     - interfacer
     - ireturn
-    - lll
-    - maintidx
     - maligned
     - nestif
-    - nilnil
-    - nlreturn
-    - nolintlint
     - nosnakecase
-    - promlinter
-    - rowserrcheck
     - scopelint
-    - sqlclosecheck
     - structcheck
-    - unparam
     - varcheck
     - varnamelen
-    - wastedassign
-    - wrapcheck
     - wsl

@@ -119,5 +119,6 @@ func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []b
 	if err != nil {
 		return false, err
 	}
+
 	return mp.Verify(data, root)
 }

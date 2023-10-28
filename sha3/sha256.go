@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package sha3 provides hashing using the SHA3 system.
 package sha3
 
 import (
@@ -19,10 +20,10 @@ import (
 
 const _256hashlength = 32
 
-// SHA3 is the Sha3 hashing method.
+// SHA256 is the 256-bit SHA3 hashing method.
 type SHA256 struct{}
 
-// New creates a new Sha3 hashing method.
+// New256 creates a new 256-bit SHA3 hashing method.
 func New256() *SHA256 {
 	return &SHA256{}
 }
@@ -32,6 +33,7 @@ func (h *SHA256) HashLength() int {
 	return _256hashlength
 }
 
+// HashName returns the name of this hash.
 func (h *SHA256) HashName() string {
 	return "sha256"
 }

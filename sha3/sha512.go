@@ -19,10 +19,10 @@ import (
 
 const _512hashlength = 64
 
-// SHA3 is the Sha3 hashing method.
+// SHA512 is the 512-bit SHA3 hashing method.
 type SHA512 struct{}
 
-// New creates a new Sha3 hashing method.
+// New512 creates a new 512-bit SHA3 hashing method.
 func New512() *SHA512 {
 	return &SHA512{}
 }
@@ -32,6 +32,7 @@ func (h *SHA512) HashLength() int {
 	return _512hashlength
 }
 
+// HashName returns the name of this hash.
 func (h *SHA512) HashName() string {
 	return "sha512"
 }

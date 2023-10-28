@@ -57,6 +57,7 @@ func VerifyProofUsing(data []byte, salt bool, proof *Proof, pollard [][]byte, ha
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -79,5 +80,6 @@ func generateProofHash(data []byte, salt bool, proof *Proof, hashType HashType) 
 		}
 		index >>= 1
 	}
+
 	return proofHash
 }

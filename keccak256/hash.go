@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package keccak256 provides hashing using the Keccak256 system.
 package keccak256
 
 import (
@@ -32,6 +33,7 @@ func (h *Keccak256) HashLength() int {
 	return _hashlength
 }
 
+// HashName returns the name of this hash.
 func (h *Keccak256) HashName() string {
 	return "keccak256"
 }
@@ -42,5 +44,6 @@ func (h *Keccak256) Hash(data ...[]byte) []byte {
 	for _, d := range data {
 		hash.Write(d)
 	}
+
 	return hash.Sum(nil)
 }

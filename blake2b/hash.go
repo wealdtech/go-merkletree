@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package blake2b provides hashing using the BLAKE 2b system.
 package blake2b
 
 import (
@@ -32,6 +33,7 @@ func (h *BLAKE2b) HashLength() int {
 	return _hashlength
 }
 
+// HashName returns the name of this hash.
 func (h *BLAKE2b) HashName() string {
 	return "blake2b"
 }

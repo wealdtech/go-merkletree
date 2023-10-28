@@ -350,7 +350,7 @@ func TestString(t *testing.T) {
 				WithHashType(test.hashType),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, fmt.Sprintf("%x", test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
+			assert.Equal(t, hex.EncodeToString(test.root), tree.String(), fmt.Sprintf("incorrect string representation at test %d", i))
 		}
 	}
 }

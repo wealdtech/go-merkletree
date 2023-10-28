@@ -19,7 +19,7 @@ import "fmt"
 // It is used by DOT() to provide users with the required format for the graphical display of their Merkle trees.
 type Formatter interface {
 	// Format
-	Format([]byte) string
+	Format(data []byte) string
 }
 
 // TruncatedHexFormatter shows only the first and last two bytes of the value.

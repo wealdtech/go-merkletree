@@ -30,8 +30,8 @@
 //
 // # Implementation notes
 //
-// The tree pads its values to the next highest power of 2; values not supplied are treated as null with a value hash of 0.  This can
-// be seen graphically by generating a DOT representation of the graph with DOT().
+// The tree pads its values to the next highest power of 2; values not supplied are treated as null with a value hash of 0.  This
+// can be seen graphically by generating a DOT representation of the graph with DOT().
 //
 // If salting is enabled it appends an 4-byte value to each piece of data.  The value is the binary representation of the index in
 // big-endian form.  Note that if there are more than 2^32 values in the tree the salt will wrap, being modulo 2^32
@@ -40,7 +40,7 @@ package merkletree
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"encoding/hex"
 	"math"
 	"sort"
 
@@ -93,6 +93,7 @@ func (t *MerkleTree) indexOf(input []byte) (uint64, error) {
 			return uint64(i), nil
 		}
 	}
+
 	return 0, errors.New("data not found")
 }
 
@@ -116,6 +117,7 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 		hashes[cur] = t.Nodes[i^1]
 		cur++
 	}
+
 	return newProof(hashes, index), nil
 }
 
@@ -125,13 +127,13 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 	indices := make([]uint64, len(data))
 
 	// Step 1: generate individual proofs.
-	for i := range data {
-		tmpProof, err := t.GenerateProof(data[i], 0)
+	for dataIndex := range data {
+		tmpProof, err := t.GenerateProof(data[dataIndex], 0)
 		if err != nil {
 			return nil, err
 		}
-		hashes[i] = tmpProof.Hashes
-		indices[i] = tmpProof.Index
+		hashes[dataIndex] = tmpProof.Hashes
+		indices[dataIndex] = tmpProof.Index
 	}
 
 	// Step 2: combine the hashes across all proofs and highlight all calculated indices.
@@ -241,14 +243,14 @@ func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sorted bool
 
 // Create the branch nodes from the existing leaf data.
 func createBranches(nodes [][]byte, hash HashType, leafOffset int, sorted bool) {
-	for i := leafOffset - 1; i > 0; i-- {
-		left := nodes[i*2]
-		right := nodes[i*2+1]
+	for leafIndex := leafOffset - 1; leafIndex > 0; leafIndex-- {
+		left := nodes[leafIndex*2]
+		right := nodes[leafIndex*2+1]
 
 		if sorted && bytes.Compare(left, right) == 1 {
-			nodes[i] = hash.Hash(right, left)
+			nodes[leafIndex] = hash.Hash(right, left)
 		} else {
-			nodes[i] = hash.Hash(left, right)
+			nodes[leafIndex] = hash.Hash(left, right)
 		}
 	}
 }
@@ -276,12 +278,12 @@ func (t *MerkleTree) Root() []byte {
 	return t.Nodes[1]
 }
 
-// Salt returns the true if the values in this Merkle tree are salted.
+// GetSalt returns the true if the values in this Merkle tree are salted.
 func (t *MerkleTree) GetSalt() bool {
 	return t.Salt
 }
 
 // String implements the stringer interface.
 func (t *MerkleTree) String() string {
-	return fmt.Sprintf("%x", t.Nodes[1])
+	return hex.EncodeToString(t.Nodes[1])
 }
