@@ -49,7 +49,7 @@ func TestSaltedProof(t *testing.T) {
 				WithSalt(test.salt),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			assert.Equal(t, test.salt, tree.Salt(), fmt.Sprintf("unexpected salt at test %d", i))
+			assert.Equal(t, test.salt, tree.GetSalt(), fmt.Sprintf("unexpected salt at test %d", i))
 			assert.Equal(t, test.saltedRoot, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
 			for j, data := range test.data {
 				proof, err := tree.GenerateProof(data, 0)

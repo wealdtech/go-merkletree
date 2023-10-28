@@ -32,6 +32,10 @@ func (h *Keccak256) HashLength() int {
 	return _hashlength
 }
 
+func (h *Keccak256) HashName() string {
+	return "keccak256"
+}
+
 // Hash generates a Keccak-256 hash from a byte array.
 func (h *Keccak256) Hash(data ...[]byte) []byte {
 	hash := sha3.NewLegacyKeccak256()

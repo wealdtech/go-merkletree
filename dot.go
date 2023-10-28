@@ -63,7 +63,7 @@ func (t *MerkleTree) DOTProof(proof *Proof, lf Formatter, bf Formatter) string {
 	rootIndices := make(map[uint64]int)
 
 	if proof != nil {
-		index := proof.Index + uint64(math.Ceil(float64(len(t.nodes))/2))
+		index := proof.Index + uint64(math.Ceil(float64(len(t.Nodes))/2))
 		valueIndices[proof.Index] = 1
 
 		for range proof.Hashes {
@@ -71,7 +71,7 @@ func (t *MerkleTree) DOTProof(proof *Proof, lf Formatter, bf Formatter) string {
 			index /= 2
 		}
 
-		numRootNodes := uint64(math.Exp2(math.Ceil(math.Log2(float64(len(t.data))))-float64(len(proof.Hashes))+1)) - 1
+		numRootNodes := uint64(math.Exp2(math.Ceil(math.Log2(float64(len(t.Data))))-float64(len(proof.Hashes))+1)) - 1
 		for i := uint64(1); i <= numRootNodes; i++ {
 			rootIndices[i] = 1
 		}
@@ -114,31 +114,31 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	builder.WriteString("digraph MerkleTree {")
 	builder.WriteString("rankdir = TB;")
 	builder.WriteString("node [shape=rectangle margin=\"0.2,0.2\"];")
-	empty := make([]byte, len(t.nodes[1]))
-	dataLen := len(t.data)
-	valuesOffset := int(math.Ceil(float64(len(t.nodes)) / 2))
+	empty := make([]byte, len(t.Nodes[1]))
+	dataLen := len(t.Data)
+	valuesOffset := int(math.Ceil(float64(len(t.Nodes)) / 2))
 	var nodeBuilder strings.Builder
 	nodeBuilder.WriteString("{rank=same")
 	indexSalt := make([]byte, 4)
 	for i := 0; i < valuesOffset; i++ {
 		if i < dataLen {
 			// Value
-			builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval", lf.Format(t.data[i])))
+			builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval", lf.Format(t.Data[i])))
 			if valueIndices[uint64(i)] > 0 {
 				builder.WriteString(" style=filled fillcolor=\"#ff4040\"")
 			}
 			builder.WriteString("];")
 
 			// Hash of the value
-			if t.salt {
+			if t.Salt {
 				binary.BigEndian.PutUint32(indexSalt, uint32(i))
-				builder.WriteString(fmt.Sprintf("\"%s\"->%d [label=\"+%0x\"];", lf.Format(t.data[i]), valuesOffset+i, indexSalt))
+				builder.WriteString(fmt.Sprintf("\"%s\"->%d [label=\"+%0x\"];", lf.Format(t.Data[i]), valuesOffset+i, indexSalt))
 			} else {
-				builder.WriteString(fmt.Sprintf("\"%s\"->%d;", lf.Format(t.data[i]), valuesOffset+i))
+				builder.WriteString(fmt.Sprintf("\"%s\"->%d;", lf.Format(t.Data[i]), valuesOffset+i))
 			}
 
 			nodeBuilder.WriteString(fmt.Sprintf(";%d", valuesOffset+i))
-			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(t.nodes[valuesOffset+i])))
+			builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valuesOffset+i, bf.Format(t.Nodes[valuesOffset+i])))
 			if proofIndices[uint64(i+valuesOffset)] > 0 {
 				builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 			} else if rootIndices[uint64(i+valuesOffset)] > 0 {
@@ -169,7 +169,7 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 
 	// Add branches
 	for i := valuesOffset - 1; i > 0; i-- {
-		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", i, bf.Format(t.nodes[i])))
+		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", i, bf.Format(t.Nodes[i])))
 		if rootIndices[uint64(i)] > 0 {
 			builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 		} else if proofIndices[uint64(i)] > 0 {
