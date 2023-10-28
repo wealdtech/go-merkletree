@@ -2,8 +2,8 @@ package merkletree
 
 import (
 	"encoding/json"
-	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/wealdtech/go-merkletree/blake2b"
 	"github.com/wealdtech/go-merkletree/keccak256"
 	"github.com/wealdtech/go-merkletree/sha3"
@@ -43,7 +43,7 @@ func (t *MerkleTree) UnmarshalJSON(data []byte) error {
 	case "keccak256":
 		aux.Hash = keccak256.New()
 	default:
-		return fmt.Errorf("cannot parse hash type")
+		return errors.New("cannot parse hash type")
 	}
 
 	return nil
