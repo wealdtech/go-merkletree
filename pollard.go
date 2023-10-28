@@ -16,7 +16,7 @@ package merkletree
 import (
 	"bytes"
 
-	"github.com/wealdtech/go-merkletree/blake2b"
+	"github.com/wealdtech/go-merkletree/v2/blake2b"
 )
 
 // VerifyPollard ensures that the branches in the pollard match up with the root using the default hash type.
