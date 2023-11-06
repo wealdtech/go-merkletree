@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/wealdtech/go-merkletree/blake2b"
-	"github.com/wealdtech/go-merkletree/keccak256"
-	"github.com/wealdtech/go-merkletree/sha3"
+	"github.com/wealdtech/go-merkletree/v2/blake2b"
+	"github.com/wealdtech/go-merkletree/v2/keccak256"
+	"github.com/wealdtech/go-merkletree/v2/sha3"
 )
 
 // MarshalJSON implements json.Marshaler.
