@@ -70,18 +70,24 @@ func (p *MultiProof) Verify(data [][]byte, root []byte) (bool, error) {
 	// Step 2 calculate values up the tree.
 	for i := p.Values - 1; i > 0; i-- {
 		_, exists := p.Hashes[i]
+		if exists {
+			continue
+		}
+
+		child1, exists := p.Hashes[i*2]
 		if !exists {
-			child1, exists := p.Hashes[i*2]
-			if exists {
-				child2, exists := p.Hashes[i*2+1]
-				if exists {
-					if p.sorted && bytes.Compare(child1, child2) == 1 {
-						p.Hashes[i] = p.hash.Hash(child2, child1)
-					} else {
-						p.Hashes[i] = p.hash.Hash(child1, child2)
-					}
-				}
-			}
+			continue
+		}
+
+		child2, exists := p.Hashes[i*2+1]
+		if !exists {
+			continue
+		}
+
+		if p.sorted && bytes.Compare(child1, child2) == 1 {
+			p.Hashes[i] = p.hash.Hash(child2, child1)
+		} else {
+			p.Hashes[i] = p.hash.Hash(child1, child2)
 		}
 	}
 

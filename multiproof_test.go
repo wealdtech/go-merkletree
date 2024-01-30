@@ -34,31 +34,23 @@ func TestMultiProof(t *testing.T) {
 				WithSorted(test.sorted),
 			)
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
-			// Test proof for each data item individually
-			for j, data := range test.data {
-				proof, err := tree.GenerateMultiProof([][]byte{data})
-				assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
-				proven, err := proof.Verify([][]byte{data}, tree.Root())
-				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
-				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
-			}
-			// Test proof for each data item cumulatively.
+
+			// Test proof for all combinations of data.
 			var proof *MultiProof
-			for j, data := range test.data {
-				if j == 0 {
-					proof, err = tree.GenerateMultiProof([][]byte{data})
-					assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
+			combinations := 1<<len(test.data) - 1
+			for j := 1; j <= combinations; j++ {
+				items := make([][]byte, 0)
+				for k := 0; k < len(test.data); k++ {
+					if (j>>k)&1 == 1 {
+						items = append(items, test.data[k])
+					}
 				}
-				proven, err := proof.Verify([][]byte{data}, tree.Root())
+				proof, err = tree.GenerateMultiProof(items)
+				assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
+				proven, err := proof.Verify(items, tree.Root())
 				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
 				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
 			}
-			// Test proof for all data
-			proof, err = tree.GenerateMultiProof(test.data)
-			assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d", i))
-			proven, err := proof.Verify(test.data, tree.Root())
-			assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d", i))
-			assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d", i))
 		}
 	}
 }
@@ -147,7 +139,7 @@ func TestSavings(t *testing.T) {
 	tree, err := New(data)
 	assert.Nil(t, err, "failed to create tree")
 
-	rand.Seed(0)
+	rand := rand.New(rand.NewSource(0))
 	proofSize := 0
 	pollardSize := 0
 	multiProofSize := 0

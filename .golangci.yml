@@ -140,7 +140,6 @@ linters:
     - interfacer
     - ireturn
     - maligned
-    - nestif
     - nosnakecase
     - scopelint
     - structcheck
