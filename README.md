@@ -23,7 +23,7 @@ Go implementation of a Merkle tree.
 `go-merkletree` is a standard Go module which can be installed with:
 
 ```sh
-go get github.com/wealdtech/go-merkletree
+go get github.com/wealdtech/go-merkletree/v2
 ```
 
 ## Usage
