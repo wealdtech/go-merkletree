@@ -23,7 +23,7 @@ Go implementation of a Merkle tree.
 `go-merkletree` is a standard Go module which can be installed with:
 
 ```sh
-go get github.com/wealdtech/go-merkletree
+go get github.com/wealdtech/go-merkletree/v2
 ```
 
 ## Usage
@@ -47,7 +47,7 @@ and below is a proof visualisation with the value being proved in red, the inter
 package main
 
 import (
-	merkletree "github.com/wealdtech/go-merkletree"
+	merkletree "github.com/wealdtech/go-merkletree/v2"
 )
 
 // Example using the Merkle tree to generate and verify proofs.
