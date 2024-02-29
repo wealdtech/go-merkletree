@@ -135,17 +135,31 @@ func (t *MerkleTree) GenerateProofWithIndex(index uint64, height int) (*Proof, e
 
 // GenerateMultiProof generates the proof for multiple pieces of data.
 func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
-	hashes := make([][][]byte, len(data))
 	indices := make([]uint64, len(data))
 
 	// Step 1: generate individual proofs.
 	for dataIndex := range data {
-		tmpProof, err := t.GenerateProof(data[dataIndex], 0)
+		index, err := t.indexOf(data[dataIndex])
 		if err != nil {
 			return nil, err
 		}
-		hashes[dataIndex] = tmpProof.Hashes
-		indices[dataIndex] = tmpProof.Index
+		indices[dataIndex] = index
+	}
+
+	return t.GenerateMultiProofWithIndices(indices)
+}
+
+// GenerateMultiProof generates the proof for multiple pieces of data.
+func (t *MerkleTree) GenerateMultiProofWithIndices(indices []uint64) (*MultiProof, error) {
+	hashes := make([][][]byte, len(indices))
+
+	// Step 1: generate individual proofs.
+	for i, leafIndex := range indices {
+		tmpProof, err := t.GenerateProofWithIndex(leafIndex, 0)
+		if err != nil {
+			return nil, err
+		}
+		hashes[i] = tmpProof.Hashes
 	}
 
 	// Step 2: combine the hashes across all proofs and highlight all calculated indices.

@@ -24,6 +24,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMultiProofWithIndices(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+				WithSalt(test.salt),
+				WithSorted(test.sorted),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+
+			// Test proof for all combinations of data.
+			var proof *MultiProof
+			combinations := 1<<len(test.data) - 1
+			for j := 1; j <= combinations; j++ {
+				indices := make([]uint64, 0)
+				items := make([][]byte, 0)
+				for k := 0; k < len(test.data); k++ {
+					if (j>>k)&1 == 1 {
+						indices = append(indices, uint64(k))
+						items = append(items, test.data[k])
+					}
+				}
+				proof, err = tree.GenerateMultiProofWithIndices(indices)
+				assert.Nil(t, err, fmt.Sprintf("failed to create multiproof at test %d data %d", i, j))
+				proven, err := proof.Verify(items, tree.Root())
+				assert.Nil(t, err, fmt.Sprintf("error verifying multiproof at test %d data %d", i, j))
+				assert.True(t, proven, fmt.Sprintf("failed to verify multiproof at test %d data %d", i, j))
+			}
+		}
+	}
+}
+
 func TestMultiProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
