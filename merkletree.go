@@ -177,7 +177,7 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 	branchesLen := int(math.Exp2(math.Ceil(math.Log2(float64(len(parameters.data))))))
 
 	// We pad our data length up to the power of 2.
-	nodes := make([][]byte, branchesLen+len(parameters.data)+(branchesLen-len(parameters.data)))
+	nodes := make([][]byte, branchesLen*2)
 
 	// We put the leaves after the branches in the slice of nodes.
 	createLeaves(
