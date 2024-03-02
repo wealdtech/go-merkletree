@@ -111,7 +111,8 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 	return t.GenerateProofWithIndex(index, height)
 }
 
-// GenerateProofWithIndex generates the proof for the data at the given index. It is faster than GenerateProof() if the index is already known.
+// GenerateProofWithIndex generates the proof for the data at the given index.
+// It is faster than GenerateProof() if the index is already known.
 // Height is the height of the pollard to verify the proof.  If using the Merkle root to verify this should be 0.
 // If the index is out of range this will return an error.
 // If the data is present in the tree this will return the hashes for each level in the tree and the index of the value in the tree.
