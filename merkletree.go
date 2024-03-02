@@ -108,6 +108,19 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 		return nil, err
 	}
 
+	return t.GenerateProofWithIndex(index, height)
+}
+
+// GenerateProofWithIndex generates the proof for the data at the given index.
+// It is faster than GenerateProof() if the index is already known.
+// Height is the height of the pollard to verify the proof.  If using the Merkle root to verify this should be 0.
+// If the index is out of range this will return an error.
+// If the data is present in the tree this will return the hashes for each level in the tree and the index of the value in the tree.
+func (t *MerkleTree) GenerateProofWithIndex(index uint64, height int) (*Proof, error) {
+	if index >= uint64(len(t.Data)) {
+		return nil, errors.New("index out of range")
+	}
+
 	proofLen := int(math.Ceil(math.Log2(float64(len(t.Data))))) - height
 	hashes := make([][]byte, proofLen)
 
@@ -123,17 +136,31 @@ func (t *MerkleTree) GenerateProof(data []byte, height int) (*Proof, error) {
 
 // GenerateMultiProof generates the proof for multiple pieces of data.
 func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
-	hashes := make([][][]byte, len(data))
 	indices := make([]uint64, len(data))
 
 	// Step 1: generate individual proofs.
 	for dataIndex := range data {
-		tmpProof, err := t.GenerateProof(data[dataIndex], 0)
+		index, err := t.indexOf(data[dataIndex])
 		if err != nil {
 			return nil, err
 		}
-		hashes[dataIndex] = tmpProof.Hashes
-		indices[dataIndex] = tmpProof.Index
+		indices[dataIndex] = index
+	}
+
+	return t.GenerateMultiProofWithIndices(indices)
+}
+
+// GenerateMultiProof generates the proof for multiple pieces of data.
+func (t *MerkleTree) GenerateMultiProofWithIndices(indices []uint64) (*MultiProof, error) {
+	hashes := make([][][]byte, len(indices))
+
+	// Step 1: generate individual proofs.
+	for i, leafIndex := range indices {
+		tmpProof, err := t.GenerateProofWithIndex(leafIndex, 0)
+		if err != nil {
+			return nil, err
+		}
+		hashes[i] = tmpProof.Hashes
 	}
 
 	// Step 2: combine the hashes across all proofs and highlight all calculated indices.
