@@ -132,7 +132,15 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	nodeBuilder.WriteString("};")
 	builder.WriteString(nodeBuilder.String())
 
-	// Add branches
+	t.dotBranches(rootIndices, proofIndices, bf, &builder)
+
+	builder.WriteString("}")
+
+	return builder.String()
+}
+
+func (t *MerkleTree) dotBranches(rootIndices, proofIndices map[uint64]int, bf Formatter, builder *strings.Builder) {
+	valuesOffset := int(math.Ceil(float64(len(t.Nodes)) / 2))
 	for valueIndex := valuesOffset - 1; valueIndex > 0; valueIndex-- {
 		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valueIndex, bf.Format(t.Nodes[valueIndex])))
 		if rootIndices[uint64(valueIndex)] > 0 {
@@ -145,9 +153,6 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 			builder.WriteString(fmt.Sprintf("%d->%d;", valueIndex, valueIndex/2))
 		}
 	}
-	builder.WriteString("}")
-
-	return builder.String()
 }
 
 func (t *MerkleTree) dotLeaf(builder *strings.Builder,

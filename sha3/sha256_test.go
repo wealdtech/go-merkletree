@@ -43,6 +43,7 @@ func Test256Hash(t *testing.T) {
 	}
 
 	hash := sha3.New256()
+	assert.Equal(t, "sha256", hash.HashName())
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))

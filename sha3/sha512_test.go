@@ -33,6 +33,7 @@ func Test512Hash(t *testing.T) {
 	}
 
 	hash := sha3.New512()
+	assert.Equal(t, "sha512", hash.HashName())
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))

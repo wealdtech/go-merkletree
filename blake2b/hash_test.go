@@ -43,6 +43,7 @@ func TestHash(t *testing.T) {
 	}
 
 	hash := blake2b.New()
+	assert.Equal(t, "blake2b", hash.HashName())
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
