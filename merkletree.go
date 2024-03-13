@@ -289,11 +289,12 @@ func createBranches(nodes [][]byte, hash HashType, leafOffset int, sortedPairs b
 			})
 		}
 
-		if len(pairs) == 1 {
+		switch {
+		case len(pairs) == 1:
 			nodes[leafIndex] = pairs[0]
-		} else if len(pairs) > 1 {
+		case len(pairs) > 1:
 			nodes[leafIndex] = hash.Hash(pairs...)
-		} else {
+		default:
 			nodes[leafIndex] = []byte{}
 		}
 	}
