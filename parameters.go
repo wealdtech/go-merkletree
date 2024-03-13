@@ -20,13 +20,16 @@ import (
 )
 
 type parameters struct {
-	data    [][]byte
-	values  uint64
-	hashes  map[uint64][]byte
-	indices []uint64
-	salt    bool
-	sorted  bool
-	hash    HashType
+	data         [][]byte
+	values       uint64
+	hashes       map[uint64][]byte
+	indices      []uint64
+	salt         bool
+	sorted       bool
+	sortedPairs  bool
+	sortedLeaves bool
+	fillDefault  bool
+	hash         HashType
 }
 
 // Parameter is the interface for service parameters.
@@ -94,10 +97,29 @@ func WithHashType(hash HashType) Parameter {
 	})
 }
 
+func WithSortedPairs(sortedPairs bool) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.sortedPairs = sortedPairs
+	})
+}
+
+func WithSortedLeaves(sortedLeaves bool) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.sortedLeaves = sortedLeaves
+	})
+}
+
+func WithFillDefault(fillDefault bool) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.fillDefault = fillDefault
+	})
+}
+
 // parseAndCheckTreeParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckTreeParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
-		hash: blake2b.New(),
+		hash:        blake2b.New(),
+		fillDefault: true,
 	}
 	for _, p := range params {
 		if params != nil {

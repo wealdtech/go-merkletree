@@ -41,10 +41,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/pkg/errors"
 	"math"
 	"sort"
-
-	"github.com/pkg/errors"
 )
 
 // MerkleTree is the structure for the Merkle tree.
@@ -212,11 +211,14 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 		nodes[branchesLen:branchesLen+len(parameters.data)],
 		parameters.hash,
 		parameters.salt,
-		parameters.sorted,
+		parameters.sorted || parameters.sortedLeaves,
+		parameters.fillDefault,
 	)
 	// Pad the space left after the leaves.
-	for i := len(parameters.data) + branchesLen; i < len(nodes); i++ {
-		nodes[i] = make([]byte, parameters.hash.HashLength())
+	if parameters.fillDefault {
+		for i := len(parameters.data) + branchesLen; i < len(nodes); i++ {
+			nodes[i] = make([]byte, parameters.hash.HashLength())
+		}
 	}
 
 	// Branches.
@@ -224,7 +226,7 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 		nodes,
 		parameters.hash,
 		branchesLen,
-		parameters.sorted,
+		parameters.sorted || parameters.sortedPairs,
 	)
 
 	tree := &MerkleTree{
@@ -248,7 +250,7 @@ func New(data [][]byte) (*MerkleTree, error) {
 // Hashes the data slice, placing the result hashes into dest.
 // salt adds a salt to the hash using the index.
 // sorted sorts the leaves and data by the value of the leaf hash.
-func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sorted bool) {
+func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sortedLeaves, fillDefault bool) {
 	indexSalt := make([]byte, 4)
 	for i := range data {
 		if salt {
@@ -259,7 +261,7 @@ func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sorted bool
 		}
 	}
 
-	if sorted {
+	if sortedLeaves {
 		sorter := hashSorter{
 			data:   data,
 			hashes: dest,
@@ -268,16 +270,41 @@ func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sorted bool
 	}
 }
 
+func isZeroBytes(s []byte) bool {
+	for _, v := range s {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // Create the branch nodes from the existing leaf data.
-func createBranches(nodes [][]byte, hash HashType, leafOffset int, sorted bool) {
+func createBranches(nodes [][]byte, hash HashType, leafOffset int, sortedPairs bool) {
 	for leafIndex := leafOffset - 1; leafIndex > 0; leafIndex-- {
 		left := nodes[leafIndex*2]
 		right := nodes[leafIndex*2+1]
 
-		if sorted && bytes.Compare(left, right) == 1 {
-			nodes[leafIndex] = hash.Hash(right, left)
+		var pairs [][]byte
+		if len(left) != 0 {
+			pairs = append(pairs, left)
+		}
+		if len(right) != 0 {
+			pairs = append(pairs, right)
+		}
+
+		if sortedPairs {
+			sort.Slice(pairs, func(i, j int) bool {
+				return bytes.Compare(pairs[i], pairs[j]) < 0
+			})
+		}
+
+		if len(pairs) == 1 {
+			nodes[leafIndex] = pairs[0]
+		} else if len(pairs) > 1 {
+			nodes[leafIndex] = hash.Hash(pairs...)
 		} else {
-			nodes[leafIndex] = hash.Hash(left, right)
+			nodes[leafIndex] = []byte{}
 		}
 	}
 }
