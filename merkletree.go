@@ -41,9 +41,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/pkg/errors"
 	"math"
 	"sort"
+
+	"github.com/pkg/errors"
 )
 
 // MerkleTree is the structure for the Merkle tree.
