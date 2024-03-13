@@ -55,7 +55,12 @@ var tests = []struct {
 	// salt the data?
 	salt bool
 	// should the hashes be sorted?
-	sorted bool
+	sorted           bool
+	sortedRoot       []byte
+	sortedPairsRoot  []byte
+	sortedLeavesRoot []byte
+	// fillDefaultRoot pad empty leaves with zero bytes
+	fillDefaultRoot []byte
 	// saltedRoot hash after the tree has been created with the salt
 	saltedRoot []byte
 }{
@@ -80,9 +85,12 @@ var tests = []struct {
 				_byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
 			},
 		},
-		dot:        "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"2434…cfac\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"f40e…406d\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"8d18…354d\"];}",
-		salt:       true,
-		saltedRoot: _byteArray("8d18bf1d3ce24f418ded32b60e8881f60ce658bb33b0cfbbc152fcb3aac8354d"),
+		dot:              "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"2434…cfac\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"f40e…406d\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"8d18…354d\"];}",
+		salt:             true,
+		saltedRoot:       _byteArray("8d18bf1d3ce24f418ded32b60e8881f60ce658bb33b0cfbbc152fcb3aac8354d"),
+		sortedPairsRoot:  _byteArray("586b87a66d48dfa411bb3f7dd39a157e92cbd65fce56eccd86be5473a434480e"),
+		sortedLeavesRoot: _byteArray("586b87a66d48dfa411bb3f7dd39a157e92cbd65fce56eccd86be5473a434480e"),
+		fillDefaultRoot:  _byteArray("e9e0083e456539e9f6336164cd98700e668178f98af147ef750eb90afcf2f637"),
 	},
 	{ // 3
 		hashType: keccak256.New(),
@@ -90,18 +98,24 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root:       _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
-		dot:        "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"0b34…c7b9\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"5621…a66c\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e637…f3b6\"];}",
-		salt:       true,
-		saltedRoot: _byteArray("e6379b212ee745a62d259ecf0bcccd316d67782a159ded7a88ac788c64b3f3b6"),
+		root:             _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
+		dot:              "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->2 [label=\"+00000000\"];2 [label=\"0b34…c7b9\"];2->1;\"Bar\" [shape=oval];\"Bar\"->3 [label=\"+00000001\"];3 [label=\"5621…a66c\"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label=\"e637…f3b6\"];}",
+		salt:             true,
+		saltedRoot:       _byteArray("e6379b212ee745a62d259ecf0bcccd316d67782a159ded7a88ac788c64b3f3b6"),
+		sortedPairsRoot:  _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
+		sortedLeavesRoot: _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
+		fillDefaultRoot:  _byteArray("fb6c3a47aacb11c3f7ee3717cfbd43e4ad08da66d2cb049358db7e056baaaeed"),
 	},
 	{ // 4
 		hashType: blake2b.New(),
 		data: [][]byte{
 			[]byte("Foo"),
 		},
-		root: _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
-		dot:  "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->1;1 [label=\"7b50…c81f\"];{rank=same;1};}",
+		root:             _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
+		dot:              "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->1;1 [label=\"7b50…c81f\"];{rank=same;1};}",
+		sortedPairsRoot:  _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
+		sortedLeavesRoot: _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
+		fillDefaultRoot:  _byteArray("7b506db718d5cce819ca4d33d2348065a5408cc89aa8b3f7ac70a0c186a2c81f"),
 	},
 	{ // 5
 		hashType: blake2b.New(),
@@ -129,6 +143,9 @@ var tests = []struct {
 				"digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->4;4 [label=\"7b50…c81f\" style=filled fillcolor=\"#8080ff\"];4->2;\"Bar\" [shape=oval];\"Bar\"->5;5 [label=\"03c7…6406\" style=filled fillcolor=\"#8080ff\"];4->5 [style=invisible arrowhead=none];5->2;\"Baz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Baz\"->6;6 [label=\"6d5f…2ae0\" style=filled fillcolor=\"#8080ff\"];5->6 [style=invisible arrowhead=none];6->3;7 [label=\"0000…0000\" style=filled fillcolor=\"#8080ff\"];6->7 [style=invisible arrowhead=none];7->3;{rank=same;4;5;6;7};3 [label=\"113f…1135\" style=filled fillcolor=\"#8080ff\"];3->1;2 [label=\"e9e0…f637\" style=filled fillcolor=\"#8080ff\"];2->1;1 [label=\"2c95…4203\" style=filled fillcolor=\"#8080ff\"];}",
 			},
 		},
+		sortedPairsRoot:  _byteArray("db368764ed9bde4ff75f27403c2e3eb10d03b7757514c886f83337f9667df443"),
+		sortedLeavesRoot: _byteArray("cf53e43fb79844c5475fad360e7f8096f45396e3c3fecb457ea76e3250d797c6"),
+		fillDefaultRoot:  _byteArray("573cb9effba5c9e1b6d11208bbbf4af154e35c35e18875f8e566b3e3e33c9e85"),
 	},
 	{ // 6
 		hashType: blake2b.New(),
@@ -151,7 +168,10 @@ var tests = []struct {
 				"digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->8;8 [label=\"7b50…c81f\"];8->4;\"Bar\" [shape=oval];\"Bar\"->9;9 [label=\"03c7…6406\"];8->9 [style=invisible arrowhead=none];9->4;\"Baz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Baz\"->10;10 [label=\"6d5f…2ae0\"];9->10 [style=invisible arrowhead=none];10->5;\"Qux\" [shape=oval];\"Qux\"->11;11 [label=\"d5d1…3cda\" style=filled fillcolor=\"#00ff00\"];10->11 [style=invisible arrowhead=none];11->5;\"Quux\" [shape=oval];\"Quux\"->12;12 [label=\"2fec…1151\"];11->12 [style=invisible arrowhead=none];12->6;\"Quuz\" [shape=oval];\"Quuz\"->13;13 [label=\"aff2…62e5\"];12->13 [style=invisible arrowhead=none];13->6;14 [label=\"0000…0000\"];13->14 [style=invisible arrowhead=none];14->7;15 [label=\"0000…0000\"];14->15 [style=invisible arrowhead=none];15->7;{rank=same;8;9;10;11;12;13;14;15};7 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];7->3;6 [label=\"3705…4377\" style=filled fillcolor=\"#8080ff\"];6->3;5 [label=\"f277…7fd5\" style=filled fillcolor=\"#8080ff\"];5->2;4 [label=\"e9e0…f637\" style=filled fillcolor=\"#8080ff\"];4->2;3 [label=\"5082…d5f0\" style=filled fillcolor=\"#8080ff\"];3->1;2 [label=\"7799…9592\" style=filled fillcolor=\"#8080ff\"];2->1;1 [label=\"9db4…516d\" style=filled fillcolor=\"#8080ff\"];}",
 			},
 		},
-		multiProofDot: "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Foo\"->8;8 [label=\"7b50…c81f\"];8->4;\"Bar\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Bar\"->9;9 [label=\"03c7…6406\"];8->9 [style=invisible arrowhead=none];9->4;\"Baz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Baz\"->10;10 [label=\"6d5f…2ae0\"];9->10 [style=invisible arrowhead=none];10->5;\"Qux\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Qux\"->11;11 [label=\"d5d1…3cda\"];10->11 [style=invisible arrowhead=none];11->5;\"Quux\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Quux\"->12;12 [label=\"2fec…1151\"];11->12 [style=invisible arrowhead=none];12->6;\"Quuz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Quuz\"->13;13 [label=\"aff2…62e5\"];12->13 [style=invisible arrowhead=none];13->6;14 [label=\"0000…0000\"];13->14 [style=invisible arrowhead=none];14->7;15 [label=\"0000…0000\"];14->15 [style=invisible arrowhead=none];15->7;{rank=same;8;9;10;11;12;13;14;15};7 [label=\"0eb9…9761\" style=filled fillcolor=\"#00ff00\"];7->3;6 [label=\"3705…4377\"];6->3;5 [label=\"f277…7fd5\"];5->2;4 [label=\"e9e0…f637\"];4->2;3 [label=\"5082…d5f0\"];3->1;2 [label=\"7799…9592\"];2->1;1 [label=\"9db4…516d\" style=filled fillcolor=\"#8080ff\"];}",
+		multiProofDot:    "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Foo\"->8;8 [label=\"7b50…c81f\"];8->4;\"Bar\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Bar\"->9;9 [label=\"03c7…6406\"];8->9 [style=invisible arrowhead=none];9->4;\"Baz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Baz\"->10;10 [label=\"6d5f…2ae0\"];9->10 [style=invisible arrowhead=none];10->5;\"Qux\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Qux\"->11;11 [label=\"d5d1…3cda\"];10->11 [style=invisible arrowhead=none];11->5;\"Quux\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Quux\"->12;12 [label=\"2fec…1151\"];11->12 [style=invisible arrowhead=none];12->6;\"Quuz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"Quuz\"->13;13 [label=\"aff2…62e5\"];12->13 [style=invisible arrowhead=none];13->6;14 [label=\"0000…0000\"];13->14 [style=invisible arrowhead=none];14->7;15 [label=\"0000…0000\"];14->15 [style=invisible arrowhead=none];15->7;{rank=same;8;9;10;11;12;13;14;15};7 [label=\"0eb9…9761\" style=filled fillcolor=\"#00ff00\"];7->3;6 [label=\"3705…4377\"];6->3;5 [label=\"f277…7fd5\"];5->2;4 [label=\"e9e0…f637\"];4->2;3 [label=\"5082…d5f0\"];3->1;2 [label=\"7799…9592\"];2->1;1 [label=\"9db4…516d\" style=filled fillcolor=\"#8080ff\"];}",
+		sortedPairsRoot:  _byteArray("5dbc18f689a37f049f2c84024ddc6d9785fc5b28681d0269a88ec48bba51a8a5"),
+		sortedLeavesRoot: _byteArray("c0c39b336d8a291d82d42614f6b2fb87522744c28d45225dcc96ad9d932c028f"),
+		fillDefaultRoot:  _byteArray("ad0f50d11ef5fa36618b34d42331481f6865f212b7220b230cb6a50c5a4268cf"),
 	},
 	{ // 7
 		hashType: blake2b.New(),
@@ -262,6 +282,9 @@ var tests = []struct {
 				"digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Foo\" [shape=oval];\"Foo\"->16 [label=\"+00000000\"];16 [label=\"2434…cfac\"];16->8;\"Bar\" [shape=oval];\"Bar\"->17 [label=\"+00000001\"];17 [label=\"f40e…406d\"];16->17 [style=invisible arrowhead=none];17->8;\"Baz\" [shape=oval];\"Baz\"->18 [label=\"+00000002\"];18 [label=\"7c7c…5a1c\"];17->18 [style=invisible arrowhead=none];18->9;\"Qux\" [shape=oval];\"Qux\"->19 [label=\"+00000003\"];19 [label=\"b718…ea0d\"];18->19 [style=invisible arrowhead=none];19->9;\"Quux\" [shape=oval];\"Quux\"->20 [label=\"+00000004\"];20 [label=\"be71…083a\"];19->20 [style=invisible arrowhead=none];20->10;\"Quuz\" [shape=oval];\"Quuz\"->21 [label=\"+00000005\"];21 [label=\"73a8…bc0f\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBar\" [shape=oval];\"FooBar\"->22 [label=\"+00000006\"];22 [label=\"e8b3…5f20\"];21->22 [style=invisible arrowhead=none];22->11;\"FooBaz\" [shape=oval];\"FooBaz\"->23 [label=\"+00000007\"];23 [label=\"970f…8911\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval style=filled fillcolor=\"#ff4040\"];\"BarBaz\"->24 [label=\"+00000008\"];24 [label=\"cb70…bc43\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\" style=filled fillcolor=\"#00ff00\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];15->7;14 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];14->7;13 [label=\"0eb9…9761\" style=filled fillcolor=\"#8080ff\"];13->6;12 [label=\"e9d0…3bad\" style=filled fillcolor=\"#8080ff\"];12->6;11 [label=\"b3c6…0cd2\" style=filled fillcolor=\"#8080ff\"];11->5;10 [label=\"7473…a3a4\" style=filled fillcolor=\"#8080ff\"];10->5;9 [label=\"6dc5…fd2b\" style=filled fillcolor=\"#8080ff\"];9->4;8 [label=\"8d18…354d\" style=filled fillcolor=\"#8080ff\"];8->4;7 [label=\"85c0…c3b1\" style=filled fillcolor=\"#8080ff\"];7->3;6 [label=\"fb16…ac5b\" style=filled fillcolor=\"#8080ff\"];6->3;5 [label=\"4847…84bf\" style=filled fillcolor=\"#8080ff\"];5->2;4 [label=\"622b…1133\" style=filled fillcolor=\"#8080ff\"];4->2;3 [label=\"ee7e…8174\" style=filled fillcolor=\"#8080ff\"];3->1;2 [label=\"286d…fea8\" style=filled fillcolor=\"#8080ff\"];2->1;1 [label=\"6530…4dbd\" style=filled fillcolor=\"#8080ff\"];}",
 			},
 		},
+		sortedPairsRoot:  _byteArray("a42c0537b6528c28e10f59cca71493dbbbaf6d9dccbe0bdd61adde5c7aaedb84"),
+		sortedLeavesRoot: _byteArray("8338f789012f023535c6fbe5fbde4b5cf15eed8176ed7ad72755e61ad8752b3a"),
+		fillDefaultRoot:  _byteArray("304bafafa91d089940c71064530dca4991cf4d7893bfde13c760489ae7df1f70"),
 	},
 	{ // 8
 		hashType: sha3.New256(),
@@ -269,10 +292,13 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root:       _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
-		dot:        `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2 [label="+00000000"];2 [label="8cfa…3eb2"];2->1;"Bar" [shape=oval];"Bar"->3 [label="+00000001"];3 [label="3ef4…7217"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="2c43…ac7e"];}`,
-		salt:       true,
-		saltedRoot: _byteArray("0x2c43852d823852001111584dadcb305a7336ec3f392e4eb81be4664ff2baac7e"),
+		root:             _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		dot:              `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2 [label="+00000000"];2 [label="8cfa…3eb2"];2->1;"Bar" [shape=oval];"Bar"->3 [label="+00000001"];3 [label="3ef4…7217"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="2c43…ac7e"];}`,
+		salt:             true,
+		saltedRoot:       _byteArray("0x2c43852d823852001111584dadcb305a7336ec3f392e4eb81be4664ff2baac7e"),
+		sortedPairsRoot:  _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		sortedLeavesRoot: _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		fillDefaultRoot:  _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
 	},
 	{ // 9
 		hashType: sha3.New512(),
@@ -280,10 +306,13 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root:       _byteArray("5383482cf75e1cee1608ff4dd4250ca84ee0e5037dd77fd3fd5243e3955cc8570e90cf5c1043a55f2226011166b5829471e369ac4e535fe135357f8b21fb3c6d"),
-		dot:        `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2 [label="+00000000"];2 [label="f38c…facc"];2->1;"Bar" [shape=oval];"Bar"->3 [label="+00000001"];3 [label="e6ee…2d69"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="9c68…0af8"];}`,
-		salt:       true,
-		saltedRoot: _byteArray("0x9c68ec06cd268662d643706a29bf697d6873edff158895aee0b33df3ff741bcc17f1886a4a13408588c1428cd1b3455c1c0b800d304cebffb1aeb5941fe50af8"),
+		root:             _byteArray("5383482cf75e1cee1608ff4dd4250ca84ee0e5037dd77fd3fd5243e3955cc8570e90cf5c1043a55f2226011166b5829471e369ac4e535fe135357f8b21fb3c6d"),
+		dot:              `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2 [label="+00000000"];2 [label="f38c…facc"];2->1;"Bar" [shape=oval];"Bar"->3 [label="+00000001"];3 [label="e6ee…2d69"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="9c68…0af8"];}`,
+		salt:             true,
+		saltedRoot:       _byteArray("0x9c68ec06cd268662d643706a29bf697d6873edff158895aee0b33df3ff741bcc17f1886a4a13408588c1428cd1b3455c1c0b800d304cebffb1aeb5941fe50af8"),
+		sortedPairsRoot:  _byteArray("89df6c494d26c15fa85b047ca1d72a0255b3c975d213f9a4d4d4e273415abe6e49132348978bf85c4083c8a1604d7b293c752d725dd35d1b9a94da85b7997cbd"),
+		sortedLeavesRoot: _byteArray("89df6c494d26c15fa85b047ca1d72a0255b3c975d213f9a4d4d4e273415abe6e49132348978bf85c4083c8a1604d7b293c752d725dd35d1b9a94da85b7997cbd"),
+		fillDefaultRoot:  _byteArray("5383482cf75e1cee1608ff4dd4250ca84ee0e5037dd77fd3fd5243e3955cc8570e90cf5c1043a55f2226011166b5829471e369ac4e535fe135357f8b21fb3c6d"),
 	},
 	{ // 10 - Simple sorted no change
 		hashType: sha3.New256(),
@@ -291,9 +320,13 @@ var tests = []struct {
 			[]byte("Foo"),
 			[]byte("Bar"),
 		},
-		root:   _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
-		dot:    `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
-		sorted: true,
+		root:             _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		dot:              `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
+		sorted:           true,
+		sortedRoot:       _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		sortedPairsRoot:  _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		sortedLeavesRoot: _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		fillDefaultRoot:  _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
 	},
 	{ // 11 - Simple sorted swapped
 		hashType: sha3.New256(),
@@ -301,9 +334,13 @@ var tests = []struct {
 			[]byte("Bar"),
 			[]byte("Foo"),
 		},
-		root:   _byteArray("93478030114bd1f4880ac24dc764f7f60543e455905fdd7a7de5199b205153e5"),
-		dot:    `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
-		sorted: true,
+		root:             _byteArray("93478030114bd1f4880ac24dc764f7f60543e455905fdd7a7de5199b205153e5"),
+		dot:              `digraph MerkleTree {rankdir = TB;node [shape=rectangle margin="0.2,0.2"];"Foo" [shape=oval];"Foo"->2;2 [label="195e…278a"];2->1;"Bar" [shape=oval];"Bar"->3;3 [label="65a0…1755"];2->3 [style=invisible arrowhead=none];3->1;{rank=same;2;3};1 [label="bd5d…dd35"];}`,
+		sorted:           true,
+		sortedRoot:       _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		sortedPairsRoot:  _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		sortedLeavesRoot: _byteArray("bd5d1211ddae4a38d2627d8d31922315d929857541ef40cfa5a3f9696e3bdd35"),
+		fillDefaultRoot:  _byteArray("93478030114bd1f4880ac24dc764f7f60543e455905fdd7a7de5199b205153e5"),
 	},
 	{ // 12 - Complicated sorted
 		hashType: sha3.New256(),
@@ -318,9 +355,13 @@ var tests = []struct {
 			[]byte("FooBaz"),
 			[]byte("BarBaz"),
 		},
-		root:   _byteArray("cd9f207c306b2d0587bfec3ce7aed296f5fcc90807db0a5a8f884a98cecbb996"),
-		sorted: true,
-		dot:    "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Qux\" [shape=oval];\"Qux\"->16;16 [label=\"003d…71bd\"];16->8;\"Foo\" [shape=oval];\"Foo\"->17;17 [label=\"195e…278a\"];16->17 [style=invisible arrowhead=none];17->8;\"FooBar\" [shape=oval];\"FooBar\"->18;18 [label=\"3007…265f\"];17->18 [style=invisible arrowhead=none];18->9;\"Bar\" [shape=oval];\"Bar\"->19;19 [label=\"65a0…1755\"];18->19 [style=invisible arrowhead=none];19->9;\"Baz\" [shape=oval];\"Baz\"->20;20 [label=\"6a08…3c41\"];19->20 [style=invisible arrowhead=none];20->10;\"Quux\" [shape=oval];\"Quux\"->21;21 [label=\"7781…1042\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBaz\" [shape=oval];\"FooBaz\"->22;22 [label=\"9209…fb63\"];21->22 [style=invisible arrowhead=none];22->11;\"Quuz\" [shape=oval];\"Quuz\"->23;23 [label=\"ce1e…f6ea\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval];\"BarBaz\"->24;24 [label=\"f86c…483b\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"070f…81e0\"];15->7;14 [label=\"070f…81e0\"];14->7;13 [label=\"070f…81e0\"];13->6;12 [label=\"eaa6…7b07\"];12->6;11 [label=\"f4e2…59b9\"];11->5;10 [label=\"1bea…1f21\"];10->5;9 [label=\"ff5a…afc1\"];9->4;8 [label=\"0fb6…8e6c\"];8->4;7 [label=\"53da…4530\"];7->3;6 [label=\"812c…f0f7\"];6->3;5 [label=\"e0c3…a1ad\"];5->2;4 [label=\"1e5e…1997\"];4->2;3 [label=\"4f01…3c5c\"];3->1;2 [label=\"4ab6…2203\"];2->1;1 [label=\"1109…6371\"];}",
+		root:             _byteArray("cd9f207c306b2d0587bfec3ce7aed296f5fcc90807db0a5a8f884a98cecbb996"),
+		sorted:           true,
+		sortedRoot:       _byteArray("110969bb5cb78267db588032385b52401accc112537b3f712849ed4c96dc6371"),
+		sortedPairsRoot:  _byteArray("527fa4bcc21037221a33fa5e1d284a3710076f094bc5ab398ce7b4f5646aba5a"),
+		sortedLeavesRoot: _byteArray("b7c3dd02859b9fb386507ad8de3746b152bc3f9c8aa10fed9999c223f05cca7c"),
+		fillDefaultRoot:  _byteArray("170d2d5406fd6ec0e83a41f8484cba7190be360398ed559f4aabcaddab3c47c0"),
+		dot:              "digraph MerkleTree {rankdir = TB;node [shape=rectangle margin=\"0.2,0.2\"];\"Qux\" [shape=oval];\"Qux\"->16;16 [label=\"003d…71bd\"];16->8;\"Foo\" [shape=oval];\"Foo\"->17;17 [label=\"195e…278a\"];16->17 [style=invisible arrowhead=none];17->8;\"FooBar\" [shape=oval];\"FooBar\"->18;18 [label=\"3007…265f\"];17->18 [style=invisible arrowhead=none];18->9;\"Bar\" [shape=oval];\"Bar\"->19;19 [label=\"65a0…1755\"];18->19 [style=invisible arrowhead=none];19->9;\"Baz\" [shape=oval];\"Baz\"->20;20 [label=\"6a08…3c41\"];19->20 [style=invisible arrowhead=none];20->10;\"Quux\" [shape=oval];\"Quux\"->21;21 [label=\"7781…1042\"];20->21 [style=invisible arrowhead=none];21->10;\"FooBaz\" [shape=oval];\"FooBaz\"->22;22 [label=\"9209…fb63\"];21->22 [style=invisible arrowhead=none];22->11;\"Quuz\" [shape=oval];\"Quuz\"->23;23 [label=\"ce1e…f6ea\"];22->23 [style=invisible arrowhead=none];23->11;\"BarBaz\" [shape=oval];\"BarBaz\"->24;24 [label=\"f86c…483b\"];23->24 [style=invisible arrowhead=none];24->12;25 [label=\"0000…0000\"];24->25 [style=invisible arrowhead=none];25->12;26 [label=\"0000…0000\"];25->26 [style=invisible arrowhead=none];26->13;27 [label=\"0000…0000\"];26->27 [style=invisible arrowhead=none];27->13;28 [label=\"0000…0000\"];27->28 [style=invisible arrowhead=none];28->14;29 [label=\"0000…0000\"];28->29 [style=invisible arrowhead=none];29->14;30 [label=\"0000…0000\"];29->30 [style=invisible arrowhead=none];30->15;31 [label=\"0000…0000\"];30->31 [style=invisible arrowhead=none];31->15;{rank=same;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31};15 [label=\"070f…81e0\"];15->7;14 [label=\"070f…81e0\"];14->7;13 [label=\"070f…81e0\"];13->6;12 [label=\"eaa6…7b07\"];12->6;11 [label=\"f4e2…59b9\"];11->5;10 [label=\"1bea…1f21\"];10->5;9 [label=\"ff5a…afc1\"];9->4;8 [label=\"0fb6…8e6c\"];8->4;7 [label=\"53da…4530\"];7->3;6 [label=\"812c…f0f7\"];6->3;5 [label=\"e0c3…a1ad\"];5->2;4 [label=\"1e5e…1997\"];4->2;3 [label=\"4f01…3c5c\"];3->1;2 [label=\"4ab6…2203\"];2->1;1 [label=\"1109…6371\"];}",
 	},
 }
 
@@ -369,4 +410,68 @@ func TestInvalidMultiProof(t *testing.T) {
 	)
 	assert.False(t, verified, "invalid params verified should be false")
 	assert.Error(t, err, "invalid params should error")
+}
+
+func TestSorted(t *testing.T) {
+	for i, test := range tests {
+		tree, err := NewTree(
+			WithData(test.data),
+			WithHashType(test.hashType),
+			WithSorted(true),
+		)
+		if test.createErr != nil {
+			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, hex.EncodeToString(test.sortedRoot), hex.EncodeToString(tree.Root()), fmt.Sprintf("unexpected root at test %d", i))
+		}
+	}
+}
+
+func TestSortedPairs(t *testing.T) {
+	for i, test := range tests {
+		tree, err := NewTree(
+			WithData(test.data),
+			WithHashType(test.hashType),
+			WithSortedPairs(true),
+		)
+		if test.createErr != nil {
+			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, hex.EncodeToString(test.sortedPairsRoot), hex.EncodeToString(tree.Root()), fmt.Sprintf("unexpected root at test %d", i))
+		}
+	}
+}
+
+func TestSortedLeaves(t *testing.T) {
+	for i, test := range tests {
+		tree, err := NewTree(
+			WithData(test.data),
+			WithHashType(test.hashType),
+			WithSortedLeaves(true),
+		)
+		if test.createErr != nil {
+			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, hex.EncodeToString(test.sortedLeavesRoot), hex.EncodeToString(tree.Root()), fmt.Sprintf("unexpected root at test %d", i))
+		}
+	}
+}
+
+func TestFillDefault(t *testing.T) {
+	for i, test := range tests {
+		tree, err := NewTree(
+			WithData(test.data),
+			WithHashType(test.hashType),
+			WithFillDefault(false), // which default is true
+		)
+		if test.createErr != nil {
+			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			assert.Equal(t, hex.EncodeToString(test.fillDefaultRoot), hex.EncodeToString(tree.Root()), fmt.Sprintf("unexpected root at test %d", i))
+		}
+	}
 }
