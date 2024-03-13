@@ -335,9 +335,6 @@ func TestNew(t *testing.T) {
 		if test.createErr != nil {
 			assert.Equal(t, test.createErr.Error(), err.Error(), fmt.Sprintf("expected error at test %d", i))
 		} else {
-			if hex.EncodeToString(test.root) != hex.EncodeToString(tree.Root()) {
-				t.Logf("%d %x vs %x", i, test.root, tree.Root())
-			}
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			assert.Equal(t, test.root, tree.Root(), fmt.Sprintf("unexpected root at test %d", i))
 		}
