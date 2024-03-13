@@ -37,14 +37,14 @@ func TestMultiProofWithIndices(t *testing.T) {
 
 			// Test proof for all combinations of data.
 			var proof *MultiProof
-			combinations := 1<<len(test.data) - 1
+			combinations := 1<<len(tree.Data) - 1
 			for j := 1; j <= combinations; j++ {
 				indices := make([]uint64, 0)
 				items := make([][]byte, 0)
-				for k := 0; k < len(test.data); k++ {
+				for k := 0; k < len(tree.Data); k++ {
 					if (j>>k)&1 == 1 {
 						indices = append(indices, uint64(k))
-						items = append(items, test.data[k])
+						items = append(items, tree.Data[k])
 					}
 				}
 				proof, err = tree.GenerateMultiProofWithIndices(indices)
