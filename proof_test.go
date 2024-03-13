@@ -21,6 +21,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestProofWithIndex(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			for j, data := range test.data {
+				proof, err := tree.GenerateProofWithIndex(uint64(j), 0)
+				assert.Nil(t, err, fmt.Sprintf("failed to create proof at test %d data %d", i, j))
+				proven, err := VerifyProofUsing(data, false, proof, [][]byte{tree.Root()}, test.hashType)
+				assert.Nil(t, err, fmt.Sprintf("error verifying proof at test %d", i))
+				assert.True(t, proven, fmt.Sprintf("failed to verify proof at test %d data %d", i, j))
+			}
+		}
+	}
+}
+
 func TestProof(t *testing.T) {
 	for i, test := range tests {
 		if test.createErr == nil {
@@ -96,6 +115,20 @@ func TestMissingProof(t *testing.T) {
 			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
 			_, err = tree.GenerateProof(missingData, 0)
 			assert.Equal(t, err.Error(), "data not found")
+		}
+	}
+}
+
+func TestProveInvalidIndex(t *testing.T) {
+	for i, test := range tests {
+		if test.createErr == nil {
+			tree, err := NewTree(
+				WithData(test.data),
+				WithHashType(test.hashType),
+			)
+			assert.Nil(t, err, fmt.Sprintf("failed to create tree at test %d", i))
+			_, err = tree.GenerateProofWithIndex(uint64(len(test.data)+i), 0)
+			assert.Equal(t, err.Error(), "index out of range")
 		}
 	}
 }

@@ -43,6 +43,7 @@ func TestHash(t *testing.T) {
 	}
 
 	hash := keccak256.New()
+	assert.Equal(t, "keccak256", hash.HashName())
 	for i, test := range tests {
 		output := hash.Hash(test.data)
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
