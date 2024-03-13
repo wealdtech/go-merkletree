@@ -212,7 +212,6 @@ func NewTree(params ...Parameter) (*MerkleTree, error) {
 		parameters.hash,
 		parameters.salt,
 		parameters.sorted || parameters.sortedLeaves,
-		parameters.fillDefault,
 	)
 	// Pad the space left after the leaves.
 	if parameters.fillDefault {
@@ -250,7 +249,7 @@ func New(data [][]byte) (*MerkleTree, error) {
 // Hashes the data slice, placing the result hashes into dest.
 // salt adds a salt to the hash using the index.
 // sorted sorts the leaves and data by the value of the leaf hash.
-func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sortedLeaves, fillDefault bool) {
+func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sortedLeaves bool) {
 	indexSalt := make([]byte, 4)
 	for i := range data {
 		if salt {
@@ -268,15 +267,6 @@ func createLeaves(data [][]byte, dest [][]byte, hash HashType, salt, sortedLeave
 		}
 		sort.Sort(sorter)
 	}
-}
-
-func isZeroBytes(s []byte) bool {
-	for _, v := range s {
-		if v != 0 {
-			return false
-		}
-	}
-	return true
 }
 
 // Create the branch nodes from the existing leaf data.
