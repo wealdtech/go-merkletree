@@ -15,23 +15,17 @@
 package poseidon
 
 import (
-	"hash"
-
 	"github.com/iden3/go-iden3-crypto/poseidon"
 )
 
 const _hashlength = 32
-const _framesize = 16
 
 // Poseidon is the Poseidon hashing method.
-type Poseidon struct {
-	inner hash.Hash
-}
+type Poseidon struct{}
 
 // New creates a new Poseidon hashing method.
 func New() *Poseidon {
-	p, _ := poseidon.New(_framesize)
-	return &Poseidon{p}
+	return &Poseidon{}
 }
 
 // Hash generates a Poseidon hash from a byte array.
