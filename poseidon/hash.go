@@ -23,7 +23,7 @@ const _hashlength = 32
 // Poseidon is the Poseidon hashing method.
 type Poseidon struct{}
 
-// New creates a new Poseidon hashing method.
+// New creates a new Poseidon hashing method with `frameSize` set to 16.
 func New() *Poseidon {
 	return &Poseidon{}
 }
