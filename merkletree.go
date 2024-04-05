@@ -150,7 +150,7 @@ func (t *MerkleTree) GenerateMultiProof(data [][]byte) (*MultiProof, error) {
 	return t.GenerateMultiProofWithIndices(indices)
 }
 
-// GenerateMultiProof generates the proof for multiple pieces of data.
+// GenerateMultiProofWithIndices generates the proof for multiple pieces of data.
 func (t *MerkleTree) GenerateMultiProofWithIndices(indices []uint64) (*MultiProof, error) {
 	hashes := make([][][]byte, len(indices))
 
