@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
+          cache: false
           go-version: '1.20'
       - uses: actions/checkout@v4
       - uses: morphy2k/revive-action@v2
