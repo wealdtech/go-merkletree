@@ -103,6 +103,7 @@ func (t *MerkleTree) DOTMultiProof(multiProof *MultiProof, lf Formatter, bf Form
 	return t.dot(rootIndices, valueIndices, proofIndices, lf, bf)
 }
 
+//nolint:revive
 func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int, lf, bf Formatter) string {
 	if lf == nil {
 		lf = new(TruncatedHexFormatter)
@@ -139,6 +140,7 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	return builder.String()
 }
 
+//nolint:revive
 func (t *MerkleTree) dotBranches(rootIndices, proofIndices map[uint64]int, bf Formatter, builder *strings.Builder) {
 	valuesOffset := int(math.Ceil(float64(len(t.Nodes)) / 2))
 	for valueIndex := valuesOffset - 1; valueIndex > 0; valueIndex-- {
@@ -155,6 +157,7 @@ func (t *MerkleTree) dotBranches(rootIndices, proofIndices map[uint64]int, bf Fo
 	}
 }
 
+//nolint:revive
 func (t *MerkleTree) dotLeaf(builder *strings.Builder,
 	nodeBuilder *strings.Builder,
 	i int,
@@ -193,6 +196,7 @@ func (t *MerkleTree) dotLeaf(builder *strings.Builder,
 	}
 }
 
+//nolint:revive
 func (t *MerkleTree) dotEmptyLeaf(builder *strings.Builder,
 	nodeBuilder *strings.Builder,
 	offset int,
