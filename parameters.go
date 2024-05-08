@@ -43,7 +43,12 @@ func (f parameterFunc) apply(p *parameters) {
 // WithData sets the data for the merkle tree.
 func WithData(data [][]byte) Parameter {
 	return parameterFunc(func(p *parameters) {
-		p.data = data
+		dup := make([][]byte, len(data))
+		for i := range data {
+			dup[i] = make([]byte, len(data[i]))
+			copy(dup[i], data[i])
+		}
+		p.data = dup
 	})
 }
 
