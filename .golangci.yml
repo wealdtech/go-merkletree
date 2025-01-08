@@ -14,6 +14,14 @@ issues:
   exclude-files:
     - ".*_ssz\\.go$"
 
+  include:
+    - 'EXC0002'
+    - 'EXC0005'
+    - 'EXC0009'
+    - 'EXC0011'
+    - 'EXC0012'
+    - 'EXC0014'
+
 # Options for analysis running.
 run:
   # The default concurrency value is the number of available CPU.
@@ -106,8 +114,26 @@ output:
 
 # All available settings of specific linters.
 linters-settings:
+  gosec:
+    excludes:
+      - G115 # This generates a lot of false positives, recheck once https://github.com/securego/gosec/issues/1212 is closed
+
   lll:
     line-length: 132
+
+  nlreturn:
+    # Allow two-line blocks without requiring a newline
+    block-size: 3
+
+  stylecheck:
+    checks: [ "all", "-ST1000" ]
+
+  tagliatelle:
+    case:
+      # use-field-name: true
+      rules:
+        json: snake
+        yaml: snake
 
   revive:
     ignore-generated-header: true
@@ -159,16 +185,6 @@ linters-settings:
       - name: var-naming
       - name: waitgroup-by-value
 
-  stylecheck:
-    checks: [ "all", "-ST1000" ]
-
-  tagliatelle:
-    case:
-      # use-field-name: true
-      rules:
-        json: snake
-        yaml: snake
-
 linters:
   # Enable all available linters.
   # Default: false
@@ -177,13 +193,11 @@ linters:
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
     - cyclop
-    - deadcode
     - depguard
     - dupl
-    - execinquery
     - exhaustive
-    - exhaustivestruct
     - exhaustruct
+    - exportloopref
     - forcetypeassert
     - funlen
     - gci
@@ -192,21 +206,12 @@ linters:
     - gocognit
     - goconst
     - err113
-    - golint
-    - gomnd
-    - ifshort
-    - interfacer
     - ireturn
     - lll
     - maintidx
-    - maligned
     - mnd
     - musttag
-    - nosnakecase
     - perfsprint
-    - scopelint
-    - structcheck
-    - varcheck
     - varnamelen
     - wrapcheck
     - wsl

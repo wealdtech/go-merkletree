@@ -15,6 +15,9 @@
 package poseidon
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/iden3/go-iden3-crypto/poseidon"
 )
 
@@ -30,6 +33,12 @@ func New() *Poseidon {
 
 // Hash generates a Poseidon hash from a byte array.
 func (*Poseidon) Hash(data ...[]byte) []byte {
+	for i := range data {
+		if len(data[i])%32 != 0 {
+			_, _ = fmt.Fprintln(os.Stderr, "Poseidon hash implementation is not secure with arbitrary length byte arrays; please provide details of your usage at https://github.com/wealdtech/go-merkletree/issues/19")
+		}
+	}
+
 	var hash []byte
 	if len(data) == 1 {
 		hash = poseidon.Sum(data[0])

@@ -73,3 +73,27 @@ func TestMultiHash(t *testing.T) {
 		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
 	}
 }
+
+func TestPadding(t *testing.T) {
+	tests := []struct {
+		data   []byte
+		output []byte
+	}{
+		{
+			data:   _byteArray("e9e0083e"),
+			output: _byteArray("05c614a428f9a323d3090ba3598d2add459d62a7b49aa293e4ab658225d3e615"),
+		},
+	}
+
+	hash := poseidon.New()
+	for i, test := range tests {
+		output := hash.Hash(test.data)
+		assert.Equal(t, test.output, output, fmt.Sprintf("failed at test %d", i))
+
+		// Padded data should not result in the same hash
+		paddedData := make([]byte, 32)
+		copy(paddedData, test.data)
+		paddedOutput := hash.Hash(paddedData)
+		assert.NotEqual(t, test.output, paddedOutput, fmt.Sprintf("hash of %x same as hash of %x", test.data, paddedData))
+	}
+}
