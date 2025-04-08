@@ -14,6 +14,7 @@
 package merkletree
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/wealdtech/go-merkletree/v2/blake2b"
 	"github.com/wealdtech/go-merkletree/v2/keccak256"
 	"github.com/wealdtech/go-merkletree/v2/sha3"
@@ -369,4 +371,46 @@ func TestInvalidMultiProof(t *testing.T) {
 	)
 	assert.False(t, verified, "invalid params verified should be false")
 	assert.Error(t, err, "invalid params should error")
+}
+
+func benchmarkMerkleWithSize(chunkSize int, count int, hash HashType, b *testing.B) {
+	r := require.New(b)
+
+	data := make([][]byte, count)
+
+	for i := 0; i < count; i++ {
+		data[i] = make([]byte, chunkSize)
+		_, err := rand.Read(data[i])
+		r.NoError(err)
+	}
+
+	_, err := NewTree(
+		WithData(data),
+		WithHashType(hash),
+	)
+	r.NoError(err)
+}
+
+func BenchmarkMerkle(b *testing.B) {
+	sizes := []int{10, 20, 50, 100}
+	hashType := []HashType{sha3.New256(), sha3.New512(), blake2b.New(), keccak256.New()}
+	chunkSizes := []int{
+		1,           // 1 byte
+		1024,        // 1 kib
+		1024 * 10,   // 10 kb
+		1024 * 100,  // 100 kb
+		1024 * 1024, // 1 mib
+	}
+
+	for _, chunkSize := range chunkSizes {
+		for _, size := range sizes {
+			for _, ht := range hashType {
+				b.Run(fmt.Sprintf("chunk_size_%d_node_count_%d_hash_%s", chunkSize, size, ht.HashName()), func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						benchmarkMerkleWithSize(chunkSize, size, ht, b)
+					}
+				})
+			}
+		}
+	}
 }

@@ -58,7 +58,7 @@ func ExampleMerkleTree() {
 }
 
 // Example using a Merkle pollard rather than a simple root.
-func ExampleMerklePollard() {
+func ExampleMerkleTree_Pollard() {
 	// Data for the tree
 	data := [][]byte{
 		[]byte("Foo"),

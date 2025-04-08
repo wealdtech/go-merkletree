@@ -35,7 +35,10 @@ func New() *Poseidon {
 func (*Poseidon) Hash(data ...[]byte) []byte {
 	for i := range data {
 		if len(data[i])%32 != 0 {
-			_, _ = fmt.Fprintln(os.Stderr, "Poseidon hash implementation is not secure with arbitrary length byte arrays; please provide details of your usage at https://github.com/wealdtech/go-merkletree/issues/19")
+			_, _ = fmt.Fprintln(
+				os.Stderr,
+				"Poseidon hash implementation is not secure with arbitrary length byte arrays; please provide details of your usage at https://github.com/wealdtech/go-merkletree/issues/19",
+			)
 		}
 	}
 
