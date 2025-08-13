@@ -1,3 +1,4 @@
+version: 2
 # This file contains all available configuration options
 # with their default values (in comments).
 #
@@ -110,9 +111,14 @@ output:
 
   # Sort results by: filepath, line and column.
   # sort-results: true
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
 
-
-# All available settings of specific linters.
+    # All available settings of specific linters.
 linters-settings:
   gosec:
     excludes:
@@ -185,6 +191,7 @@ linters-settings:
       - name: var-naming
       - name: waitgroup-by-value
 
+
 linters:
   # Enable all available linters.
   # Default: false
@@ -197,10 +204,8 @@ linters:
     - dupl
     - exhaustive
     - exhaustruct
-    - exportloopref
     - forcetypeassert
     - funlen
-    - gci
     - gochecknoglobals
     - gochecknoinits
     - gocognit

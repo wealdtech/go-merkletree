@@ -71,7 +71,9 @@ func (t *MerkleTree) DOTProof(proof *Proof, lf Formatter, bf Formatter) string {
 			index /= 2
 		}
 
-		numRootNodes := uint64(math.Exp2(math.Ceil(math.Log2(float64(len(t.Data))))-float64(len(proof.Hashes))+1)) - 1
+		numRootNodes := uint64(
+			math.Exp2(math.Ceil(math.Log2(float64(len(t.Data))))-float64(len(proof.Hashes))+1),
+		) - 1
 		for i := uint64(1); i <= numRootNodes; i++ {
 			rootIndices[i] = 1
 		}
@@ -103,8 +105,12 @@ func (t *MerkleTree) DOTMultiProof(multiProof *MultiProof, lf Formatter, bf Form
 	return t.dot(rootIndices, valueIndices, proofIndices, lf, bf)
 }
 
+//
 //nolint:revive
-func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int, lf, bf Formatter) string {
+func (t *MerkleTree) dot(
+	rootIndices, valueIndices, proofIndices map[uint64]int,
+	lf, bf Formatter,
+) string {
 	if lf == nil {
 		lf = new(TruncatedHexFormatter)
 	}
@@ -122,7 +128,17 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	nodeBuilder.WriteString("{rank=same")
 	for i := 0; i < valuesOffset; i++ {
 		if i < dataLen {
-			t.dotLeaf(&builder, &nodeBuilder, i, valuesOffset+i, lf, bf, valueIndices, rootIndices, proofIndices)
+			t.dotLeaf(
+				&builder,
+				&nodeBuilder,
+				i,
+				valuesOffset+i,
+				lf,
+				bf,
+				valueIndices,
+				rootIndices,
+				proofIndices,
+			)
 		} else {
 			t.dotEmptyLeaf(&builder, &nodeBuilder, valuesOffset+i, bf, rootIndices, proofIndices)
 		}
@@ -140,11 +156,16 @@ func (t *MerkleTree) dot(rootIndices, valueIndices, proofIndices map[uint64]int,
 	return builder.String()
 }
 
+//
 //nolint:revive
-func (t *MerkleTree) dotBranches(rootIndices, proofIndices map[uint64]int, bf Formatter, builder *strings.Builder) {
+func (t *MerkleTree) dotBranches(
+	rootIndices, proofIndices map[uint64]int,
+	bf Formatter,
+	builder *strings.Builder,
+) {
 	valuesOffset := int(math.Ceil(float64(len(t.Nodes)) / 2))
 	for valueIndex := valuesOffset - 1; valueIndex > 0; valueIndex-- {
-		builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", valueIndex, bf.Format(t.Nodes[valueIndex])))
+		fmt.Fprintf(builder, "%d [label=\"%s\"", valueIndex, bf.Format(t.Nodes[valueIndex]))
 		if rootIndices[uint64(valueIndex)] > 0 {
 			builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 		} else if proofIndices[uint64(valueIndex)] > 0 {
@@ -152,7 +173,7 @@ func (t *MerkleTree) dotBranches(rootIndices, proofIndices map[uint64]int, bf Fo
 		}
 		builder.WriteString("];")
 		if valueIndex > 1 {
-			builder.WriteString(fmt.Sprintf("%d->%d;", valueIndex, valueIndex/2))
+			fmt.Fprintf(builder, "%d->%d;", valueIndex, valueIndex/2)
 		}
 	}
 }
@@ -168,7 +189,7 @@ func (t *MerkleTree) dotLeaf(builder *strings.Builder,
 	rootIndices map[uint64]int,
 	proofIndices map[uint64]int,
 ) {
-	builder.WriteString(fmt.Sprintf("\"%s\" [shape=oval", leafFormatter.Format(t.Data[i])))
+	fmt.Fprintf(builder, "\"%s\" [shape=oval", leafFormatter.Format(t.Data[i]))
 	if valueIndices[uint64(i)] > 0 {
 		builder.WriteString(" style=filled fillcolor=\"#ff4040\"")
 	}
@@ -178,13 +199,19 @@ func (t *MerkleTree) dotLeaf(builder *strings.Builder,
 	if t.Salt {
 		indexSalt := make([]byte, 4)
 		binary.BigEndian.PutUint32(indexSalt, uint32(i))
-		builder.WriteString(fmt.Sprintf("\"%s\"->%d [label=\"+%0x\"];", leafFormatter.Format(t.Data[i]), offset, indexSalt))
+		fmt.Fprintf(
+			builder,
+			"\"%s\"->%d [label=\"+%0x\"];",
+			leafFormatter.Format(t.Data[i]),
+			offset,
+			indexSalt,
+		)
 	} else {
-		builder.WriteString(fmt.Sprintf("\"%s\"->%d;", leafFormatter.Format(t.Data[i]), offset))
+		fmt.Fprintf(builder, "\"%s\"->%d;", leafFormatter.Format(t.Data[i]), offset)
 	}
 
-	nodeBuilder.WriteString(fmt.Sprintf(";%d", offset))
-	builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", offset, branchFormatter.Format(t.Nodes[offset])))
+	fmt.Fprintf(nodeBuilder, ";%d", offset)
+	fmt.Fprintf(builder, "%d [label=\"%s\"", offset, branchFormatter.Format(t.Nodes[offset]))
 	if proofIndices[uint64(offset)] > 0 {
 		builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 	} else if rootIndices[uint64(offset)] > 0 {
@@ -192,7 +219,7 @@ func (t *MerkleTree) dotLeaf(builder *strings.Builder,
 	}
 	builder.WriteString("];")
 	if i > 0 {
-		builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", offset-1, offset))
+		fmt.Fprintf(builder, "%d->%d [style=invisible arrowhead=none];", offset-1, offset)
 	}
 }
 
@@ -206,13 +233,13 @@ func (t *MerkleTree) dotEmptyLeaf(builder *strings.Builder,
 ) {
 	empty := make([]byte, len(t.Nodes[1]))
 
-	builder.WriteString(fmt.Sprintf("%d [label=\"%s\"", offset, branchFormatter.Format(empty)))
+	fmt.Fprintf(builder, "%d [label=\"%s\"", offset, branchFormatter.Format(empty))
 	if proofIndices[uint64(offset)] > 0 {
 		builder.WriteString(" style=filled fillcolor=\"#00ff00\"")
 	} else if rootIndices[uint64(offset)] > 0 {
 		builder.WriteString(" style=filled fillcolor=\"#8080ff\"")
 	}
 	builder.WriteString("];")
-	builder.WriteString(fmt.Sprintf("%d->%d [style=invisible arrowhead=none];", offset-1, offset))
-	nodeBuilder.WriteString(fmt.Sprintf(";%d", offset))
+	fmt.Fprintf(builder, "%d->%d [style=invisible arrowhead=none];", offset-1, offset)
+	fmt.Fprintf(nodeBuilder, ";%d", offset)
 }

@@ -50,7 +50,13 @@ func VerifyProof(data []byte, salt bool, proof *Proof, pollard [][]byte) (bool, 
 // against historical trees without having to instantiate them.
 //
 // This returns true if the proof is verified, otherwise false.
-func VerifyProofUsing(data []byte, salt bool, proof *Proof, pollard [][]byte, hashType HashType) (bool, error) {
+func VerifyProofUsing(
+	data []byte,
+	salt bool,
+	proof *Proof,
+	pollard [][]byte,
+	hashType HashType,
+) (bool, error) {
 	proofHash := generateProofHash(data, salt, proof, hashType)
 	for i := 0; i < len(pollard)/2+1; i++ {
 		if bytes.Equal(pollard[len(pollard)-1-i], proofHash) {

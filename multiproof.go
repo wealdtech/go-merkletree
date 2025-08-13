@@ -114,7 +114,13 @@ func VerifyMultiProof(data [][]byte, salt bool, proof *MultiProof, root []byte) 
 // This returns true if the proof is verified, otherwise false.
 //
 // Deprecated: please use MultiProof.Verify(...)
-func VerifyMultiProofUsing(data [][]byte, salt bool, proof *MultiProof, root []byte, hashType HashType) (bool, error) {
+func VerifyMultiProofUsing(
+	data [][]byte,
+	salt bool,
+	proof *MultiProof,
+	root []byte,
+	hashType HashType,
+) (bool, error) {
 	mp, err := NewMultiProof(
 		WithSalt(salt),
 		WithHashType(hashType),
